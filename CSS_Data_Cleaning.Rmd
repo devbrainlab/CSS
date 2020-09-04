@@ -1,0 +1,73 @@
+---
+title: "CSS_Data_Import"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = TRUE,
+	warning = TRUE
+)
+```
+
+```{r Load Required Packages, message=FALSE, warning=FALSE, include=FALSE}
+## Load required packages ##
+packages <-  c("tidyverse",
+               "reshape2",
+               "nlme", "lme4",
+               "data.table", "psych",
+               "parallel","lubridate",
+               "mgcv", "ggpubr", "broom", "table1", "apaTables", "readxl")
+if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
+  install.packages(setdiff(packages, rownames(installed.packages())))  
+}
+lapply(packages, library, character.only = TRUE)
+
+
+theme_kate <- function () { 
+  theme_bw() +
+    theme_minimal(base_size = 14, base_family = "Avenir") +
+    theme(axis.line = element_line(colour = "black"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.border = element_blank(),
+          panel.background = element_blank(),
+          legend.position="none")
+}
+```
+
+Set root path for Lucy
+```{r}
+root_path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/"
+```
+
+
+Import data files
+```{r}
+#read in Qualtrics data
+qualtrics <- list.files(path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/Qualtrics", full.names = TRUE) %>% 
+  lapply(read_excel) %>% 
+  bind_rows %>%
+  select(7,9,27:96, 137, 142, 143)
+
+#Convert to numeric (NOTE: Need to do this to other columns as well, figure out which ones & potentially do this on import)
+qualtrics$wave <- as.numeric(qualtrics$wave)
+#Replace NA values w/ 1 (no wave specified first week)
+qualtrics$wave[is.na(qualtrics$wave)] <- 1
+
+
+
+
+#read in RedCap data
+redcap <- read.csv("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/RedCap/Covid19SocialScreens_DATA_2020-09-04_2056.csv") %>%
+  rename(ResponseId=qualtrics_id)
+
+#Join Qualtrics and Redcap data, sort by ID and wave
+all_data <- left_join(qualtrics, redcap, by="ResponseId") %>%
+  arrange(record_id, wave)
+#Rearrange columns to bring record id and wave to the beginning
+all_data <- all_data[,c(76, 75, 1:74, 77:ncol(all_data))]
+  
+```
+
