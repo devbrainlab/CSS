@@ -57,8 +57,6 @@ qualtrics$wave <- as.numeric(qualtrics$wave)
 qualtrics$wave[is.na(qualtrics$wave)] <- 1
 
 
-
-
 #read in RedCap data
 redcap <- read.csv("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/RedCap/Covid19SocialScreens_DATA_2020-09-04_2056.csv") %>%
   rename(ResponseId=qualtrics_id)
@@ -68,6 +66,159 @@ all_data <- left_join(qualtrics, redcap, by="ResponseId") %>%
   arrange(record_id, wave)
 #Rearrange columns to bring record id and wave to the beginning
 all_data <- all_data[,c(76, 75, 1:74, 77:ncol(all_data))]
-  
+
+save(all_data, file="all_data.RDA")
+
+
+#Read in Network Canvas Data 
+#netcanvas <- list.files(path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/NetCanvasCSV", full.names = TRUE) %>% 
+ # lapply(read_excel) %>% 
+ # bind_rows %>%
+ # select()
+
+#figure out whether we need to index into subfolders of netcanvascsv
+#figure out how to attach wave and ID to files
+
+
+load("all_data.RDA")
+```
+
+Calculate Summary Stats
+```{r}
+
+#calculate mean age of participants that completed 2+ waves
+
+age_calc <- qualtrics %>%
+  select("age_years", "age_months", "wave") %>%
+  filter(wave==2) %>%
+  add_row("age_years" = "18", "age_months"= "5", "wave"= 6)
+
+age_calc$age_years <- as.numeric(age_calc$age_years)
+age_calc$age_months <- as.numeric(age_calc$age_months)
+
+age_calc$years_in_months <- age_calc$age_years*12 
+age_calc$age_in_months <- age_calc$years_in_months + age_calc$age_months#rowSums(age_calc[2,4])
+
+mean_age <- mean(age_calc$age_in_months)
+sd_age <- sd(age_calc$age_in_months)
+
+```
+
+Calculate Sum Scores + Subscores
+```{r}
+
+#create copy for testing
+data_copy <- data.frame(all_data)
+
+#Recode YAM-5
+data_copy <- data_copy %>%
+  mutate_at(vars(starts_with("yam")),
+  .funs=funs(recode(.,"Never"=0, "Sometimes"=1, "Often"=2, "Always"=3)))  #Need to figure out how to add default
+#sum scores for YAM-5
+data_copy <- data_copy %>% mutate(yam_total = rowSums(.[grep("yam", names(.))], na.rm = T))  #remove NAs - make sure to account for this
+
+#NOTE: Selective mutism subscale was not included in questions- question numbers have been shifted accordingly (may be different than what is stated online)
+#Subscores for YAM-5: sum and divide by number of completed items
+#Separation Anxiety:
+data_copy <- data_copy %>% mutate(yam_separation = rowSums(.[c("yam_1", "yam_5", "yam_9", "yam_13", "yam_17", "yam_21")], na.rm = T))
+
+#Mutism was excluded from scale
+#Selective Mutism: 2,11,20,25    
+
+#Social Anxiety: 3,7,12,16,23,28
+data_copy <- data_copy %>% mutate(yam_social = rowSums(.[c("yam_2", "yam_6", "yam_10", "yam_14", "yam_20", "yam_24")], na.rm = T))
+#Panic Disorder:4,8,13,17,21,26
+data_copy <- data_copy %>% mutate(yam_panic = rowSums(.[c("yam_3", "yam_7", "yam_11", "yam_15", "yam_18", "yam_22")], na.rm = T))
+#Generalized Anxiety:5,9,14,18,22,27
+data_copy <- data_copy %>% mutate(yam_general = rowSums(.[c("yam_4", "yam_8", "yam_12", "yam_16", "yam_19", "yam_23")], na.rm = T))
+
+# Calculate how many YAM items were left unanswered, exclude if <80%
+data_copy <- data_copy %>% mutate(yam_na = rowSums(is.na(.[grep("yam", names(.))]), na.rm = T))
+#if >=5 items left blank, exclude
+
+#Recode MSPSS
+data_copy <- data_copy %>%
+  mutate_at(vars(starts_with("mspss")),
+  .funs=funs(recode(.,"Very Strongly Disagree"=1, "Strongly Disagree"=2, "Mildly Disagree"=3, "Neutral"=4, "Mildly Agree"=5, "Strongly Agree"=6, "Very Strongly Agree"=7))) 
+
+
+#sum scores for MSPSS
+data_copy <- data_copy %>% mutate(mspss_total = rowSums(.[grep("mspss", names(.))], na.rm = T)/12)
+
+#Subscores for MSPSS
+# Significant Other: 1,2,5,10 (sum & divide by 4)
+data_copy <- data_copy %>% mutate(mspss_sigother = rowSums(.[c("mspss_1", "mspss_2", "mspss_5", "mspss_10")], na.rm = T)/4)
+# Family: 3,4,8,11 (sum & divide by 4)
+data_copy <- data_copy %>% mutate(mspss_family = rowSums(.[c("mspss_3", "mspss_4", "mspss_8", "mspss_11")], na.rm = T)/4)
+# Friends: 6,7,9,12 (sum & divide by 4)
+data_copy <- data_copy %>% mutate(mspss_friends = rowSums(.[c("mspss_6", "mspss_7", "mspss_9", "mspss_12")], na.rm = T)/4)
+
+# Calculate how many MSPSS items were finished, exclude if <80%
+data_copy <- data_copy %>% mutate(mspss_na = rowSums(is.na(.[grep("mspss", names(.))]), na.rm = T))
+
+#If >= 3 items left blank, exclude
+
+
+#still need to divide by number of completed items
+
+```
+
+Data Viz for YAM & MSPSS
+```{r}
+#box plot for yam by wave
+ggboxplot(data_copy, x = "wave", y = "yam_total", color="wave")
+ggboxplot(data_copy, x = "wave", y = "yam_separation", color="wave")
+ggboxplot(data_copy, x = "wave", y = "yam_social", color="wave")
+ggboxplot(data_copy, x = "wave", y = "yam_spanic", color="wave")
+ggboxplot(data_copy, x = "wave", y = "yam_general", color="wave")
+
+
+#box plot for mspss by wave
+ggboxplot(data_copy, x = "wave", y = "mspss_total", color="wave")
+ggboxplot(data_copy, x = "wave", y = "mspss_sigother", color="wave")
+ggboxplot(data_copy, x = "wave", y = "mspss_family", color="wave")
+ggboxplot(data_copy, x = "wave", y = "mspss_friends", color="wave")
+
+
+```
+
+Screentime
+```{r}
+# For each wave, check if screentime is complete, search app_category_this_week_[1-5] for social or Social, find matching time
+#screentime_complete==1 & ifelse(grepl("social"|"Social", data_copy$[app_category_this_week[1-5]]), "yes", "no")
+
+#Find column indices where rows (within columns 117-121) contain "Social"
+data_copy$socialidx <- apply(data_copy[,97:101], 1, function(x) which(x == "Social Networking"))
+
+
+#Find social use values, by finding value 5 places to the right from column index (Category 1 Name -> Category 1 Use)
+# Make new column for social use that week
+  # all_data$social_use <- 
+
+
+# Figure out how to account for notes
+```
+
+Data Viz for Screentime
+```{r}
+#boxplot for social use by wave
+
+#box plot for overall use by wave
+
+```
+
+Social Connections
+```{r}
+#Calculate percentage of similarly named friends for each wave
+# sort by participant, compare names to previous wave
+
+```
+
+Start Building Models
+```{r}
+
+#
+
+
 ```
 
