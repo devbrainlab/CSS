@@ -80,7 +80,12 @@ save(all_data, file="all_data.RDA")
 #figure out how to attach wave and ID to files
 
 
-load("all_data.RDA")
+```
+
+Load Saved Data
+```{r}
+#' *Run to load full data * 
+load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/all_data.RDA")
 ```
 
 Calculate Summary Stats
@@ -191,12 +196,18 @@ Screentime
 data_copy$socialidx <- apply(data_copy[,97:101], 1, function(x) which(x == "Social Networking"))
 
 
-#Find social use values, by finding value 5 places to the right from column index (Category 1 Name -> Category 1 Use)
+#Find social use time values, by finding value 5 places to the right from column index (Category 1 Name -> Category 1 Use)
 # Make new column for social use that week
-  # all_data$social_use <- 
+  # all_data$social_use <- indices of columns containing social networking + 5 (to get to time)
 
+#Convert time to numeric value
+#Split string by semicolon, convert to numeric, multiply 1st number by 60, add 2nd number. Result: Time in minutes
+#as.numeric(unlist(strsplit(all_data$social_use, ":")))[1]*60 + as.numeric(unlist(strsplit(all_data$social_use, ":")))[2]
 
-# Figure out how to account for notes
+data_copy <- data_copy %>%
+  mutate(total_time_minutes= as.numeric(unlist(strsplit(data_copy$tot_time_this_week, ":")))[1]*60 + as.numeric(unlist(strsplit(data_copy$tot_time_this_week, ":")))[2])
+
+# Need to take notes into account? Days included? Last week's data?
 ```
 
 Data Viz for Screentime
@@ -204,6 +215,7 @@ Data Viz for Screentime
 #boxplot for social use by wave
 
 #box plot for overall use by wave
+ggboxplot(data_copy, x="wave", y="total_time_minutes", color="wave")
 
 ```
 
