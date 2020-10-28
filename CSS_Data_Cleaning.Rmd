@@ -204,8 +204,8 @@ data_copy$socialidx <- apply(data_copy[,97:101], 1, function(x) which(x == "Soci
 #Split string by semicolon, convert to numeric, multiply 1st number by 60, add 2nd number. Result: Time in minutes
 #as.numeric(unlist(strsplit(all_data$social_use, ":")))[1]*60 + as.numeric(unlist(strsplit(all_data$social_use, ":")))[2]
 
-data_copy <- data_copy %>%
-  mutate(total_time_minutes= as.numeric(unlist(strsplit(data_copy$tot_time_this_week, ":")))[1]*60 + as.numeric(unlist(strsplit(data_copy$tot_time_this_week, ":")))[2])
+#data_copy <- data_copy %>%
+ # mutate(total_time_minutes= as.numeric(unlist(strsplit(data_copy$tot_time_this_week, ":")))[1]*60 + #as.numeric(unlist(strsplit(data_copy$tot_time_this_week, ":")))[2])
 
 # Need to take notes into account? Days included? Last week's data?
 ```
