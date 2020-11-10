@@ -160,7 +160,6 @@ data_copy <- data_copy %>% mutate(mspss_friends = rowSums(.[c("mspss_6", "mspss_
 
 # Calculate how many MSPSS items were finished, exclude if <80%
 data_copy <- data_copy %>% mutate(mspss_na = rowSums(is.na(.[grep("mspss", names(.))]), na.rm = T))
-
 #If >= 3 items left blank, exclude
 
 
@@ -192,20 +191,40 @@ Screentime
 # For each wave, check if screentime is complete, search app_category_this_week_[1-5] for social or Social, find matching time
 #screentime_complete==1 & ifelse(grepl("social"|"Social", data_copy$[app_category_this_week[1-5]]), "yes", "no")
 
-#Find column indices where rows (within columns 117-121) contain "Social"
-data_copy$socialidx <- apply(data_copy[,97:101], 1, function(x) which(x == "Social Networking"))
+#Get social screen use per week
+
+#Convert format to long (category names)
+socialmediathisweek<-data_copy %>%
+  select(wave, ResponseId,contains("app_category_this_week_")) %>% 
+  gather(key = category, value=app,3:7)
 
 
-#Find social use time values, by finding value 5 places to the right from column index (Category 1 Name -> Category 1 Use)
-# Make new column for social use that week
-  # all_data$social_use <- indices of columns containing social networking + 5 (to get to time)
+#Convert format to long (category time), change values to match categories above
+socialmediatimethisweek<-data_copy %>%
+  select(wave, ResponseId,contains("app_category_time_this_week_")) %>% 
+  gather(key=category,value=socialtime,3:7) %>%
+  mutate(category = case_when(
+    category=="app_category_time_this_week_1" ~ "app_category_this_week_1",
+    category=="app_category_time_this_week_2" ~ "app_category_this_week_2",
+    category=="app_category_time_this_week_3" ~ "app_category_this_week_3",
+    category=="app_category_time_this_week_4" ~ "app_category_this_week_4",
+    category=="app_category_time_this_week_5" ~ "app_category_this_week_5"
+  ))
 
-#Convert time to numeric value
-#Split string by semicolon, convert to numeric, multiply 1st number by 60, add 2nd number. Result: Time in minutes
-#as.numeric(unlist(strsplit(all_data$social_use, ":")))[1]*60 + as.numeric(unlist(strsplit(all_data$social_use, ":")))[2]
+#Join to get time per category, filter out non social networking values
+socialuse<-left_join(socialmediathisweek, socialmediatimethisweek,by=c("wave","ResponseId", "category")) %>%
+  filter(app=="Social Networking" | app=="social networking") 
 
-#data_copy <- data_copy %>%
- # mutate(total_time_minutes= as.numeric(unlist(strsplit(data_copy$tot_time_this_week, ":")))[1]*60 + #as.numeric(unlist(strsplit(data_copy$tot_time_this_week, ":")))[2])
+
+#Convert time to numeric value (i.e. 2:04 to 124 minutes)
+  socialuse$timemin = as.numeric(unlist(lapply(socialuse$socialtime, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  as.numeric(unlist(lapply(socialuse$socialtime, function (x) strsplit(x, ":")[[1]][2])))
+  
+  
+#All Screen Use:
+  data_copy$tot_time_min = as.numeric(unlist(lapply(data_copy$tot_time_this_week, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  as.numeric(unlist(lapply(data_copy$tot_time_this_week, function (x) strsplit(x, ":")[[1]][2])))
+  
 
 # Need to take notes into account? Days included? Last week's data?
 ```
@@ -213,9 +232,42 @@ data_copy$socialidx <- apply(data_copy[,97:101], 1, function(x) which(x == "Soci
 Data Viz for Screentime
 ```{r}
 #boxplot for social use by wave
+ggboxplot(socialuse, x="wave", y="timemin", color="wave")
 
 #box plot for overall use by wave
-ggboxplot(data_copy, x="wave", y="total_time_minutes", color="wave")
+ggboxplot(data_copy, x="wave", y="tot_time_min", color="wave")
+
+
+raincloud_theme = theme(
+text = element_text(size = 10),
+axis.title.x = element_text(size = 16),
+axis.title.y = element_text(size = 16),
+axis.text = element_text(size = 14),
+axis.text.x = element_text(angle = 45, vjust = 0.5),
+legend.title=element_text(size=16),
+legend.text=element_text(size=16),
+legend.position = "right",
+plot.title = element_text(lineheight=.8, face="bold", size = 16),
+panel.border = element_blank(),
+panel.grid.minor = element_blank(),
+panel.grid.major = element_blank(),
+axis.line.x = element_line(colour = 'black', size=0.5, linetype='solid'),
+axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'))
+
+g <- ggplot(data = socialuse, aes(y = timemin, x = wave, fill = wave)) +
+geom_flat_violin(position = position_nudge(x = .2, y = 0), alpha = .8) +
+geom_point(aes(y = timemin, color = wave), position = position_jitter(width = .15), size = .5, alpha = 0.8) +
+geom_boxplot(width = .1, guides = FALSE, outlier.shape = NA, alpha = 0.5) +
+expand_limits(x = 5.25) +
+guides(fill = FALSE) +
+guides(color = FALSE) +
+scale_color_brewer(palette = "Spectral") +
+scale_fill_brewer(palette = "Spectral") +
+# coord_flip() +
+theme_bw() +
+raincloud_theme
+
+g
 
 ```
 
