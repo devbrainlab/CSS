@@ -83,12 +83,14 @@ for (i in 1:10) {
    datalist[[i]] <- test
 }
 netcanvas <- dplyr::bind_rows(datalist)
+save(netcanvas, file="netcanvas.Rda")
 ```
 
 Load Saved Data
 ```{r}
 #' *Run to load full data * 
 load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/all_data.RDA")
+load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/netcanvas.RDA")
 ```
 
 Calculate Summary Stats
@@ -278,6 +280,64 @@ Social Connections
 ```{r}
 #Calculate percentage of similarly named friends for each wave
 # sort by participant, compare names to previous wave
+
+join_test <- inner_join(netcanvas, all_data, by="ResponseId")%>%
+  select(record_id, ResponseId, wave.x, name, household_relationship, illness, frequency_communication, give_support, receive_support, communication_methods, age) %>% # ~20 rows less than netcanvas...could be netcanvas ids missing from all_data
+    group_by_at(vars(record_id, wave.x)) %>%
+    filter(is.na(household_relationship)|household_relationship=="friend") %>%
+    lapply(X=1:10,
+      FUN = function(X){
+        wave1=X
+        wave2=X+1
+        
+    output<-group %>%
+      intersect(wave1,wave2) #wave 1 = name from group
+      }
+      )
+
+
+
+  #output should be num of names in common between 2 waves, maybe number unique names
+  #mutate(common = intersect(group1, group2))%>%
+  #mutate(unique = unique(group1, group2))
+  #find ratio of names in common to total names
+  #possibly use group_map 
+  #lag()
+  
+  #where(wave = X)
+  
+  grouped<- netcanvas %>%
+    group_by(ResponseId, wave) %>%
+ filter(is.na(household_relationship)|household_relationship=="friend") %>%
+    lapply(X=1:10,
+               FUN = function(X){
+                 wave1=X
+        wave2=X+1
+    output<-group %>%
+      intersect(wave1,wave2)
+      }
+      )
+  
+  net_list = split(netcanvas, netcanvas$ResponseId)
+  
+  data[data$participant %in% c(8, 10),]
+
+#arrange by wave, group by id, intersect on group and lag(group)
+
+#calculate percentage of similarly named friends across waves: percentage of what? total unique friends in both waves? friends in later waves? 
+
+#for i in 1:length of group a(participant x wavea):
+  #for z in 1:length of group b(participant x waveb)
+    #if i==z
+      #return true or +1
+
+#find set union - need to figure out how to pass groups and get return value
+#intersect(x,y)
+a<- c('person1', 'person2', 'person3')
+b<- c('person1', 'person4', 'person3')
+intersect(a,b)
+length(intersect(a,b))
+
 
 ```
 
