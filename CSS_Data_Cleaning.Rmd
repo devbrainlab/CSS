@@ -281,20 +281,33 @@ Social Connections
 #Calculate percentage of similarly named friends for each wave
 # sort by participant, compare names to previous wave
 
-join_test <- inner_join(netcanvas, all_data, by="ResponseId")%>%
+netcanvas_by_record <- inner_join(netcanvas, all_data, by="ResponseId")%>%
   select(record_id, ResponseId, wave.x, name, household_relationship, illness, frequency_communication, give_support, receive_support, communication_methods, age) %>% # ~20 rows less than netcanvas...could be netcanvas ids missing from all_data
-    group_by_at(vars(record_id, wave.x)) %>%
-    filter(is.na(household_relationship)|household_relationship=="friend") %>%
-    lapply(X=1:10,
-      FUN = function(X){
-        wave1=X
-        wave2=X+1
-        
-    output<-group %>%
-      intersect(wave1,wave2) #wave 1 = name from group
-      }
-      )
+   filter(is.na(household_relationship)|household_relationship=="friend")
 
+#working (check names)
+final = test_set[FALSE,]
+final <- final  %>% add_column(common_friends = NA, .after = "names")
+final <- final  %>% add_column(unique_friends = NA, .after = "names")
+
+for (kid in unique(record_id)) {   #,'b','c','d'
+  splitted <- split(netcanvas_by_record$name[which(record_id==kid)],netcanvas_by_record$wave.x[which(record_id==kid)])
+  for(wave_num in 0:9){
+     final <- final%>% add_row(record_id=kid, wave=wave_num+1, common_friends=length(intersect(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))), unique_friends=length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
+     print(length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
+  }
+}
+
+#mutate(prop_friend_stability = )
+#final <- final %.%
+#transform(prop_friend_stability = common_friends / unique_friends)
+
+```
+
+
+Intersect & For Loop Testing
+```{r}
+#intersect of id x wave
 
 
   #output should be num of names in common between 2 waves, maybe number unique names
@@ -307,20 +320,22 @@ join_test <- inner_join(netcanvas, all_data, by="ResponseId")%>%
   #where(wave = X)
   
   grouped<- netcanvas %>%
-    group_by(ResponseId, wave) %>%
+    group_by(ResponseId, wave.x) %>%
  filter(is.na(household_relationship)|household_relationship=="friend") %>%
     lapply(X=1:10,
-               FUN = function(X){
-                 wave1=X
-        wave2=X+1
-    output<-group %>%
-      intersect(wave1,wave2)
-      }
+        FUN = function(X){
+          wave1=X
+          wave2=X+1
+          output<-group %>%
+          intersect(wave1,wave2)
+         }
       )
   
   net_list = split(netcanvas, netcanvas$ResponseId)
   
   data[data$participant %in% c(8, 10),]
+  
+
 
 #arrange by wave, group by id, intersect on group and lag(group)
 
@@ -338,6 +353,120 @@ b<- c('person1', 'person4', 'person3')
 intersect(a,b)
 length(intersect(a,b))
 
+
+
+#Test Data
+
+id <- c("a", "a", "a", "b","b","b","b", "c", "c", "c", "d", "d", "d", "d", "a", "a","b","b","c","c","d","d")
+wave<- c(1,1,2,1,1,2,2,1,2,2,1,1,2,1,3,3,3,3,3,3,3,3)
+names<-c("amy", "arnold", "amy", "bob", "becca", "bob", "becca", "carl", "carly", "carl", "dan", "dani", "danny", "carly", "arnold", "amy", "becca", "bobby", "carly", "carl", "don", "dave")
+test_set<- data.frame(id,wave,names) %>%
+    group_by(id) %>%
+  
+  x<-c(1,2)
+  loop_test<- #test_set%>%
+  for(i in c(1,2)){
+    function(i) print(intersect(test_set$names[which(wave==i)], test_set$names[which(wave==i+1)]))
+  }
+    
+  loop_test<- test_set%>%
+  lapply(x=1,
+    FUN=function(x) intersect(test_set$names[which(wave==x)], test_set$names[which(wave==x+1)])
+    )
+  
+  
+
+  loop_test2<- test_set %>% group_map(intersect, test_set$names[which(wave==1)], test_set$names[which(wave==2)])
+  
+Reduce(intersect, split(test_set$names[which(wave==1)], test_set$wave[which(wave==1)]))
+  intersect(split(test_set$names, test_set$wave), test_set$id)
+  
+fakefuck <- test_set[which(test_set$wave==1),]# %>% select(-id)
+
+for (kid in c('a','b','c','d') ) {
+  print(Reduce(intersect, split(test_set$names[which(id==kid)], test_set$wave[which(id==kid)])))
+}
+
+for (kid in unique(id)) {   #,'b','c','d'
+  splitted <- split(test_set$names[which(id==kid)], test_set$wave[which(id==kid)])
+  for(wave in 1:2){
+     print(length(intersect(unlist(splitted[wave]), unlist(splitted[wave+1]))))
+  }
+}
+
+
+#This works! Wave 1 means 1 to 2, 2 means 2, 3, 3 is blank 
+final = test_set[FALSE,]
+final <- final  %>% add_column(friends = NA, .after = "names")
+for (kid in unique(id)) {   #,'b','c','d'
+  splitted <- split(test_set$names[which(id==kid)], test_set$wave[which(id==kid)])
+  for(wave in 1:3){
+    #friend_col[length(friend_col)+1] <- length(intersect(unlist(splitted[wave]), unlist(splitted[wave+1])))
+    #final$friends[which(id==kid&wave==wave)] = length(intersect(unlist(splitted[wave]), unlist(splitted[wave+1])))
+    #mutate(final$friends[which(id==kid&wave==wave)] = length(intersect(unlist(splitted[wave]), unlist(splitted[wave+1]))))
+    #print(final$friends[which(id==kid&wave==wave)])
+     final <- final%>% add_row(id=kid, wave=wave, friends=length(intersect(unlist(splitted[wave]), unlist(splitted[wave+1]))))
+  }
+}
+
+
+
+df (wave, kid, friend_col)
+left join
+
+
+
+
+    lapply(X=1:10,
+        FUN = function(X){
+          wave1=X
+          wave2=X+1
+          output<-group %>%
+          intersect(wave1,wave2)
+         }
+      )
+
+    # This works! 1 is zero, 2 is for wave 1->2, 3 is for 2->3
+final = test_set[FALSE,]
+final <- final  %>% add_column(common_friends = NA, .after = "names")
+final <- final  %>% add_column(unique_friends = NA, .after = "names")
+
+for (kid in unique(id)) {   #,'b','c','d'
+  splitted <- split(test_set$names[which(id==kid)], test_set$wave[which(id==kid)])
+  for(wave_num in 0:2){
+     final <- final%>% add_row(id=kid, wave=wave_num+1, common_friends=length(intersect(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
+  }
+}
+#add column for common_friends/unique friends
+
+
+
+final = test_set[FALSE,]
+final <- final  %>% add_column(common_friends = NA, .after = "names")
+final <- final  %>% add_column(unique_friends = NA, .after = "names")
+
+for (kid in unique(id)) {   #,'b','c','d'
+  splitted <- split(test_set$names[which(id==kid)], test_set$wave[which(id==kid)])
+  for(wave_num in 0:2){
+     final <- final%>% add_row(id=kid, wave=wave_num+1, common_friends=length(intersect(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))), unique_friends =length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
+     print(length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
+  }
+}
+
+
+
+
+
+
+final_apply = test_set[FALSE,]
+final_apply <- final_apply  %>% add_column(friends = NA, .after = "names")
+for(kid in unique(id)){
+  splitted <- split(test_set$names[which(id==kid)], test_set$wave[which(id==kid)])
+  lapply(x=1:3, FUN=function(x)
+           final_apply <- final_apply%>% add_row(id=kid, wave=x, friends=length(intersect(unlist(splitted[x]), unlist(splitted[x+1])))
+         ))
+}
+               
 
 ```
 
