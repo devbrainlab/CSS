@@ -279,28 +279,30 @@ g
 Social Connections
 ```{r}
 #Calculate percentage of similarly named friends for each wave
-# sort by participant, compare names to previous wave
+# Join netcanvas to all_data to get record_ids, select columns that we want to keep
 
 netcanvas_by_record <- inner_join(netcanvas, all_data, by="ResponseId")%>%
   select(record_id, ResponseId, wave.x, name, household_relationship, illness, frequency_communication, give_support, receive_support, communication_methods, age) %>% # ~20 rows less than netcanvas...could be netcanvas ids missing from all_data
    filter(is.na(household_relationship)|household_relationship=="friend")
 
-#working (check names)
-final = test_set[FALSE,]
-final <- final  %>% add_column(common_friends = NA, .after = "names")
-final <- final  %>% add_column(unique_friends = NA, .after = "names")
+#Make new dataframe for counts
+netcanvas_cleaned = test_set[FALSE,] #from testing below
+netcanvas_cleaned <- netcanvas_cleaned  %>% add_column(unique_friends = NA, .after = "names")
+netcanvas_cleaned <- netcanvas_cleaned  %>% add_column(common_friends = NA, .after = "unique_friends")
 
-for (kid in unique(record_id)) {   #,'b','c','d'
+#For each kid, for each wave, split data by wave, iterate through waves, find intersect & union of friends in wave and wave+1, record info in new row of datatable
+for (kid in unique(record_id)) {
   splitted <- split(netcanvas_by_record$name[which(record_id==kid)],netcanvas_by_record$wave.x[which(record_id==kid)])
   for(wave_num in 0:9){
-     final <- final%>% add_row(record_id=kid, wave=wave_num+1, common_friends=length(intersect(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))), unique_friends=length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
+     netcanvas_cleaned <- netcanvas_cleaned %>% add_row(record_id=kid, wave=wave_num+1, common_friends=length(intersect(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))), unique_friends=length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
      print(length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
   }
 }
+#note: at wave, friends in common is 0, unique friends is number of friends at that wave
 
-#mutate(prop_friend_stability = )
-#final <- final %.%
-#transform(prop_friend_stability = common_friends / unique_friends)
+#calculate proportion of friends stable between waves (common friends/unique friends)
+netcanvas_cleaned <- netcanvas_cleaned %.%
+transform(prop_friend_stability = common_friends / unique_friends)
 
 ```
 
@@ -452,6 +454,9 @@ for (kid in unique(id)) {   #,'b','c','d'
      print(length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
   }
 }
+final <- final%>%
+transform(prop_friend_stability = common_friends / unique_friends)
+
 
 
 
