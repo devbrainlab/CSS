@@ -287,12 +287,17 @@ netcanvas_by_record <- inner_join(netcanvas, all_data, by="ResponseId")%>%
 
 #Make new dataframe for counts
 netcanvas_cleaned = test_set[FALSE,] #from testing below
-netcanvas_cleaned <- netcanvas_cleaned  %>% add_column(unique_friends = NA, .after = "names")
-netcanvas_cleaned <- netcanvas_cleaned  %>% add_column(common_friends = NA, .after = "unique_friends")
+netcanvas_cleaned <- netcanvas_cleaned  %>% 
+  add_column(unique_friends = NA, .after = "names") %>% 
+  add_column(common_friends = NA, .after = "unique_friends")
+rename(netcanvas_cleaned, record_id=id)
+  
 
 #For each kid, for each wave, split data by wave, iterate through waves, find intersect & union of friends in wave and wave+1, record info in new row of datatable
-for (kid in unique(record_id)) {
-  splitted <- split(netcanvas_by_record$name[which(record_id==kid)],netcanvas_by_record$wave.x[which(record_id==kid)])
+#netcanvas_by_record$record_id <- as.factor(netcanvas_by_record$record_id)
+
+for (kid in unique(netcanvas_by_record$record_id)) {
+  splitted <- split(netcanvas_by_record$name[which(netcanvas_by_record$record_id==kid)],netcanvas_by_record$wave.x[which(netcanvas_by_record$record_id==kid)])
   for(wave_num in 0:9){
      netcanvas_cleaned <- netcanvas_cleaned %>% add_row(record_id=kid, wave=wave_num+1, common_friends=length(intersect(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))), unique_friends=length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
      print(length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
@@ -301,7 +306,7 @@ for (kid in unique(record_id)) {
 #note: at wave, friends in common is 0, unique friends is number of friends at that wave
 
 #calculate proportion of friends stable between waves (common friends/unique friends)
-netcanvas_cleaned <- netcanvas_cleaned %.%
+netcanvas_cleaned <- netcanvas_cleaned %>%
 transform(prop_friend_stability = common_friends / unique_friends)
 
 ```
