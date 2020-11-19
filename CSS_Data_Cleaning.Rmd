@@ -58,8 +58,8 @@ qualtrics$wave[is.na(qualtrics$wave)] <- 1
 
 
 #read in RedCap data
-redcap <- read.csv("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/RedCap/Covid19SocialScreens_DATA_2020-09-04_2056.csv") %>%
-  rename(ResponseId=qualtrics_id)
+redcap <- read.csv("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/RedCap/Covid19SocialScreens_DATA_2020-11-18_2325.csv") %>%
+  dplyr::rename(ResponseId=qualtrics_id)
 
 #Join Qualtrics and Redcap data, sort by ID and wave
 all_data <- left_join(qualtrics, redcap, by="ResponseId") %>%
@@ -67,7 +67,7 @@ all_data <- left_join(qualtrics, redcap, by="ResponseId") %>%
 #Rearrange columns to bring record id and wave to the beginning
 all_data <- all_data[,c(76, 75, 1:74, 77:ncol(all_data))]
 
-save(all_data, file="all_data.RDA")
+save(all_data, file="all_data.Rda")
 
 
 #Read in Network Canvas Data wave by wave, add columns for filename(ID) and wave #
@@ -89,8 +89,13 @@ save(netcanvas, file="netcanvas.Rda")
 Load Saved Data
 ```{r}
 #' *Run to load full data * 
-load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/all_data.RDA")
-load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/netcanvas.RDA")
+load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/all_data.Rda")
+load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/netcanvas.Rda")
+load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/netcanvas_cleaned.Rda")
+
+
+#' *Run to load processed data*
+load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/processed_data.Rda")
 ```
 
 Calculate Summary Stats
@@ -146,6 +151,12 @@ data_copy <- data_copy %>% mutate(yam_general = rowSums(.[c("yam_4", "yam_8", "y
 data_copy <- data_copy %>% mutate(yam_na = rowSums(is.na(.[grep("yam", names(.))]), na.rm = T))
 #if >=5 items left blank, exclude
 
+yam_exclusion_indices <- which(data_copy$yam_na >= 5)  #indices of participants excluded for >= 5 NAs
+yam_exclusion_ids <- data_copy$ResponseID[yam_exclusion_indices] #ids of excluded participants
+
+#If needed for an analysis, exclude participants
+#yam_analysis <- subset(data_copy, (!(ResponseID %in% yam_exclusion_ids)))
+
 #Recode MSPSS
 data_copy <- data_copy %>%
   mutate_at(vars(starts_with("mspss")),
@@ -157,19 +168,21 @@ data_copy <- data_copy %>% mutate(mspss_total = rowSums(.[grep("mspss", names(.)
 
 #Subscores for MSPSS
 # Significant Other: 1,2,5,10 (sum & divide by 4)
-data_copy <- data_copy %>% mutate(mspss_sigother = rowSums(.[c("mspss_1", "mspss_2", "mspss_5", "mspss_10")], na.rm = T)/4)
+data_copy <- data_copy %>% mutate(mspss_sigother = rowSums(.[c("mspss_1", "mspss_2", "mspss_5", "mspss_10")], na.rm = T)/(4-rowSums(is.na(.[c("mspss_1", "mspss_2", "mspss_5", "mspss_10")]))))
 # Family: 3,4,8,11 (sum & divide by 4)
-data_copy <- data_copy %>% mutate(mspss_family = rowSums(.[c("mspss_3", "mspss_4", "mspss_8", "mspss_11")], na.rm = T)/4)
+data_copy <- data_copy %>% mutate(mspss_family = rowSums(.[c("mspss_3", "mspss_4", "mspss_8", "mspss_11")], na.rm = T)/(4-rowSums(is.na(.[c("mspss_3", "mspss_4", "mspss_8", "mspss_11")]))))
 # Friends: 6,7,9,12 (sum & divide by 4)
-data_copy <- data_copy %>% mutate(mspss_friends = rowSums(.[c("mspss_6", "mspss_7", "mspss_9", "mspss_12")], na.rm = T)/4)
+data_copy <- data_copy %>% mutate(mspss_friends = rowSums(.[c("mspss_6", "mspss_7", "mspss_9", "mspss_12")], na.rm = T)/(4-rowSums(is.na(.[c("mspss_6", "mspss_7", "mspss_9", "mspss_12")]))))
 
 # Calculate how many MSPSS items were finished, exclude if <80%
 data_copy <- data_copy %>% mutate(mspss_na = rowSums(is.na(.[grep("mspss", names(.))]), na.rm = T))
 #If >= 3 items left blank, exclude
 
+mspss_exclusion_indices <- which(data_copy$mspss_na >= 3)  #indices of participants excluded for >- 3 NAs
+mspss_exclusion_ids <- data_copy$ResponseID[mspss_exclusion_indices] #ids of excluded participants
 
-#still need to divide by number of completed items
-
+#If needed for an analysis, exclude participants
+#mspss_analysis <- subset(data_copy, (!(ResponseID %in% mspss_exclusion_ids)))
 ```
 
 Data Viz for YAM & MSPSS
@@ -178,7 +191,7 @@ Data Viz for YAM & MSPSS
 ggboxplot(data_copy, x = "wave", y = "yam_total", color="wave")
 ggboxplot(data_copy, x = "wave", y = "yam_separation", color="wave")
 ggboxplot(data_copy, x = "wave", y = "yam_social", color="wave")
-ggboxplot(data_copy, x = "wave", y = "yam_spanic", color="wave")
+ggboxplot(data_copy, x = "wave", y = "yam_panic", color="wave")
 ggboxplot(data_copy, x = "wave", y = "yam_general", color="wave")
 
 
@@ -222,7 +235,7 @@ socialuse<-left_join(socialmediathisweek, socialmediatimethisweek,by=c("wave","R
 
 
 #Convert time to numeric value (i.e. 2:04 to 124 minutes)
-  socialuse$timemin = as.numeric(unlist(lapply(socialuse$socialtime, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  socialuse$socialtimemin = as.numeric(unlist(lapply(socialuse$socialtime, function (x) strsplit(x, ":")[[1]][1])))*60 +
   as.numeric(unlist(lapply(socialuse$socialtime, function (x) strsplit(x, ":")[[1]][2])))
   
   
@@ -289,28 +302,42 @@ netcanvas_by_record <- inner_join(netcanvas, all_data, by="ResponseId")%>%
 netcanvas_cleaned = test_set[FALSE,] #from testing below
 netcanvas_cleaned <- netcanvas_cleaned  %>% 
   add_column(unique_friends = NA, .after = "names") %>% 
-  add_column(common_friends = NA, .after = "unique_friends")
-rename(netcanvas_cleaned, record_id=id)
-  
+  add_column(common_friends = NA, .after = "unique_friends") %>%
+  dplyr::rename(record_id=id)
+netcanvas_cleaned$record_id <- as.integer(netcanvas_cleaned$record_id)
+
 
 #For each kid, for each wave, split data by wave, iterate through waves, find intersect & union of friends in wave and wave+1, record info in new row of datatable
-#netcanvas_by_record$record_id <- as.factor(netcanvas_by_record$record_id)
 
 for (kid in unique(netcanvas_by_record$record_id)) {
   splitted <- split(netcanvas_by_record$name[which(netcanvas_by_record$record_id==kid)],netcanvas_by_record$wave.x[which(netcanvas_by_record$record_id==kid)])
   for(wave_num in 0:9){
      netcanvas_cleaned <- netcanvas_cleaned %>% add_row(record_id=kid, wave=wave_num+1, common_friends=length(intersect(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))), unique_friends=length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
-     print(length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
+     #print(length(union(unlist(splitted[wave_num]), unlist(splitted[wave_num+1]))))
   }
 }
 #note: at wave, friends in common is 0, unique friends is number of friends at that wave
+#note: when joining this back in, make sure we drop waves where the participant has no friends listed
 
 #calculate proportion of friends stable between waves (common friends/unique friends)
 netcanvas_cleaned <- netcanvas_cleaned %>%
 transform(prop_friend_stability = common_friends / unique_friends)
 
+save(netcanvas_cleaned, file="netcanvas_cleaned.Rda")
+
+processed_data <- left_join(data_copy, netcanvas_cleaned)
+processed_data <- left_join(processed_data, socialuse)
+processed_data <- processed_data %>%
+  select(-c(names, category, app))
+
+save(processed_data, file="processed_data.Rda")
 ```
 
+Social Connections Plots
+```{r}
+ggboxplot(processed_data, x="wave", y="prop_friend_stability", color="wave")
+
+```
 
 Intersect & For Loop Testing
 ```{r}
@@ -415,13 +442,6 @@ for (kid in unique(id)) {   #,'b','c','d'
      final <- final%>% add_row(id=kid, wave=wave, friends=length(intersect(unlist(splitted[wave]), unlist(splitted[wave+1]))))
   }
 }
-
-
-
-df (wave, kid, friend_col)
-left join
-
-
 
 
     lapply(X=1:10,
