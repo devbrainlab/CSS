@@ -243,6 +243,10 @@ socialuse<-left_join(socialmediathisweek, socialmediatimethisweek,by=c("wave","R
   data_copy$tot_time_min = as.numeric(unlist(lapply(data_copy$tot_time_this_week, function (x) strsplit(x, ":")[[1]][1])))*60 +
   as.numeric(unlist(lapply(data_copy$tot_time_this_week, function (x) strsplit(x, ":")[[1]][2])))
   
+#Average Use
+    data_copy$avg_time_min = as.numeric(unlist(lapply(data_copy$avg_time_this_week, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  as.numeric(unlist(lapply(data_copy$avg_time_this_week, function (x) strsplit(x, ":")[[1]][2])))
+  
 
 # Need to take notes into account? Days included? Last week's data?
 ```
@@ -250,10 +254,13 @@ socialuse<-left_join(socialmediathisweek, socialmediatimethisweek,by=c("wave","R
 Data Viz for Screentime
 ```{r}
 #boxplot for social use by wave
-ggboxplot(socialuse, x="wave", y="timemin", color="wave")
+ggboxplot(socialuse, x="wave", y="socialtimemin", color="wave")
 
 #box plot for overall use by wave
 ggboxplot(data_copy, x="wave", y="tot_time_min", color="wave")
+
+#box plot for average overall use by wave
+ggboxplot(data_copy, x="wave", y="avg_time_min", color="wave")
 
 
 packages <- c("ggplot2", "dplyr", "lavaan", "plyr", "cowplot", "rmarkdown", 
@@ -266,7 +273,7 @@ library(cowplot)
 library(dplyr)
 library(readr)
 
-
+source("~/Documents/GitHub/RainCloudPlots/tutorial_R/R_rainclouds.R")
 p_social_time <- ggplot(processed_data,aes(x=as.factor(wave),y=socialtimemin, fill = wave))+
   geom_flat_violin(position = position_nudge(x = .2, y = 0),adjust = 2)+
   geom_point(position = position_jitter(width = .15), size = .25)+
@@ -283,6 +290,14 @@ p_tot_time <- ggplot(processed_data,aes(x=as.factor(wave),y=tot_time_min, fill =
 
 p_tot_time
 
+
+p_avg_time <- ggplot(processed_data,aes(x=as.factor(wave),y=avg_time_min, fill = wave))+
+  geom_flat_violin(position = position_nudge(x = .2, y = 0),adjust = 2)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  ylab('Score')+xlab('Group')+coord_flip()+theme_cowplot()+guides(fill = FALSE)+
+  ggtitle('Figure 3: The Basic Raincloud with Colour')
+
+p_avg_time
 
 
 
