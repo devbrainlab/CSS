@@ -18,7 +18,7 @@ packages <-  c("tidyverse",
                "nlme", "lme4",
                "data.table", "psych",
                "parallel","lubridate",
-               "mgcv", "ggpubr", "broom", "table1", "apaTables", "readxl")
+               "mgcv", "ggpubr", "broom", "table1", "apaTables", "readxl", "ggalluvial")
 if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
   install.packages(setdiff(packages, rownames(installed.packages())))  
 }
@@ -350,7 +350,43 @@ save(processed_data, file="processed_data.Rda")
 
 Social Connections Plots
 ```{r}
+#Boxplot
 ggboxplot(processed_data, x="wave", y="prop_friend_stability", color="wave")
+
+
+#Raincloud plot
+p_stable_friends <- ggplot(processed_data,aes(x=as.factor(wave),y=prop_friend_stability, fill = wave))+
+  geom_flat_violin(position = position_nudge(x = .2, y = 0),adjust = 2)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  ylab('Score')+xlab('Group')+coord_flip()+theme_cowplot()+guides(fill = FALSE)+
+  ggtitle('Figure 3: The Basic Raincloud with Colour')
+
+p_stable_friends
+
+
+#Alluvial Plots
+
+#plot x as wave, y as count, alluvium as top app category?
+processed_data$app_category_this_week_1[processed_data$app_category_this_week_1 == 'social networking'] <- 'Social Networking'
+summarized_processed <- processed_data %>%
+  count(wave, app_category_this_week_1) %>%
+  filter(!is.na(app_category_this_week_1)) %>%
+  filter(app_category_this_week_1!="")
+summarized_processed$wave <- as.factor(summarized_processed$wave)
+summarized_processed$app_category_this_week_1 <- as.factor(summarized_processed$app_category_this_week_1)
+
+
+
+library(ggalluvial)
+ggplot(summarized_processed,
+       aes(x = wave, stratum = n, alluvium = app_category_this_week_1,
+           fill = app_category_this_week_1, label = app_category_this_week_1)) +
+  scale_fill_brewer(type = "qual", palette = "Set2") +
+  geom_flow(stat = "alluvium", lode.guidance = "frontback",
+            color = "darkgray") +
+  geom_stratum() +
+  theme(legend.position = "bottom") +
+  ggtitle("top app categories across waves")
 
 ```
 
@@ -518,7 +554,16 @@ for(kid in unique(id)){
 Start Building Models
 ```{r}
 
-#
+# Models will include a random intercept for participant
+# include month of data collection to account for differing restrictions/guidelines
+# social use: total time & proportion of overall use
+
+#Model 1: socially focused screen time & anxiety: yam_total ~ socialtimemin
+#Model 2: socially focused screen time & perceived social support: mspss_total ~ socialtimemin
+#Model 3: socially focused screen time & stable social connections: prop_friend_stability ~ socialtimemin
+
+fit <- lme(socialtimemin ~ yam_total + mspss_total + prop_friend_stability, random = ~1|record_id ,data=processed_data)
+summary(fit) # show results
 
 
 ```
