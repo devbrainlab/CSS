@@ -246,9 +246,38 @@ socialuse<-left_join(socialmediathisweek, socialmediatimethisweek,by=c("wave","R
 #Average Use
     data_copy$avg_time_min = as.numeric(unlist(lapply(data_copy$avg_time_this_week, function (x) strsplit(x, ":")[[1]][1])))*60 +
   as.numeric(unlist(lapply(data_copy$avg_time_this_week, function (x) strsplit(x, ":")[[1]][2])))
+    
+    
+#Add tiktok to social use
+    #if tiktok in most used apps, extract matching time [top_app_name_this_week], [app_time_by_name]
+    #add to social use
+    
+    tiktok_thisweek<-data_copy %>%
+  select(wave, ResponseId,contains("top_app_name_this_week_")) %>% 
+  gather(key = category, value=app,3:7) %>%
+      filter(app=="TikTok")
+
+
+#Convert format to long (category time), change values to match categories above
+tiktok_timethisweek<-data_copy %>%
+  select(wave, ResponseId,contains("app_time_by_name")) %>% 
+  gather(key=category,value=tiktoktime,3:7) %>%
+  mutate(category = case_when(
+    category=="app_time_by_name_1" ~ "top_app_name_this_week_1",
+    category=="app_time_by_name_2" ~ "top_app_name_this_week_2",
+    category=="app_time_by_name_3" ~ "top_app_name_this_week_3",
+    category=="app_time_by_name_4" ~ "top_app_name_this_week_4",
+    category=="app_time_by_name_5" ~ "top_app_name_this_week_5"
+  ))
+
+tiktok_use <- left_join(tiktok_thisweek, tiktok_timethisweek, by=c("wave","ResponseId", "category"))
   
 
 # Need to take notes into account? Days included? Last week's data?
+    
+#New column for screen time as proportion of total use:
+   # data_copy <- data_copy %>%
+ # transform(social_proportion = socialtimemin/tot_time_min)
 ```
 
 Data Viz for Screentime
@@ -261,6 +290,9 @@ ggboxplot(data_copy, x="wave", y="tot_time_min", color="wave")
 
 #box plot for average overall use by wave
 ggboxplot(data_copy, x="wave", y="avg_time_min", color="wave")
+
+#box plot for proportion social use by wave
+ggboxplot(processed_data, x="wave", y="social_proportion", color="wave")
 
 
 packages <- c("ggplot2", "dplyr", "lavaan", "plyr", "cowplot", "rmarkdown", 
@@ -299,6 +331,13 @@ p_avg_time <- ggplot(processed_data,aes(x=as.factor(wave),y=avg_time_min, fill =
 
 p_avg_time
 
+p_prop_social <- ggplot(processed_data,aes(x=as.factor(wave),y=social_proportion, fill = wave))+
+  geom_flat_violin(position = position_nudge(x = .2, y = 0),adjust = 2)+
+  geom_point(position = position_jitter(width = .15), size = .25)+
+  ylab('Score')+xlab('Group')+coord_flip()+theme_cowplot()+guides(fill = FALSE)+
+  ggtitle('Figure 3: The Basic Raincloud with Colour')
+
+p_prop_social
 
 
 #
@@ -345,13 +384,18 @@ processed_data <- left_join(processed_data, socialuse)
 processed_data <- processed_data %>%
   select(-c(names, category, app))
 
+#New column for screen time as proportion of total use:
+    processed_data <- processed_data %>%
+  transform(social_proportion = socialtimemin/tot_time_min)
+
 save(processed_data, file="processed_data.Rda")
 ```
 
 Social Connections Plots
 ```{r}
 #Boxplot
-ggboxplot(processed_data, x="wave", y="prop_friend_stability", color="wave")
+g = ggboxplot(processed_data, x="wave", y="prop_friend_stability", color="wave")
+g
 
 
 #Raincloud plot
@@ -466,7 +510,7 @@ test_set<- data.frame(id,wave,names) %>%
 Reduce(intersect, split(test_set$names[which(wave==1)], test_set$wave[which(wave==1)]))
   intersect(split(test_set$names, test_set$wave), test_set$id)
   
-fakefuck <- test_set[which(test_set$wave==1),]# %>% select(-id)
+fake <- test_set[which(test_set$wave==1),]# %>% select(-id)
 
 for (kid in c('a','b','c','d') ) {
   print(Reduce(intersect, split(test_set$names[which(id==kid)], test_set$wave[which(id==kid)])))
@@ -562,8 +606,12 @@ Start Building Models
 #Model 2: socially focused screen time & perceived social support: mspss_total ~ socialtimemin
 #Model 3: socially focused screen time & stable social connections: prop_friend_stability ~ socialtimemin
 
-fit <- lme(socialtimemin ~ yam_total + mspss_total + prop_friend_stability, random = ~1|record_id ,data=processed_data)
+fit <- lme(socialtimemin ~ yam_total + mspss_total + prop_friend_stability, random = ~1|record_id, data=processed_data, na.action=na.omit)
 summary(fit) # show results
+
+#Remove NAs and excluded participants (YAM & MSPSS)
+##mspss_analysis <- subset(data_copy, (!(ResponseID %in% mspss_exclusion_ids)))
+#yam_analysis <- subset(data_copy, (!(ResponseID %in% yam_exclusion_ids)))
 
 
 ```
