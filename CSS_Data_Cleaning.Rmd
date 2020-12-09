@@ -270,14 +270,32 @@ tiktok_timethisweek<-data_copy %>%
     category=="app_time_by_name_5" ~ "top_app_name_this_week_5"
   ))
 
-tiktok_use <- left_join(tiktok_thisweek, tiktok_timethisweek, by=c("wave","ResponseId", "category"))
+#Get tiktok use only by participant and wave
+tiktok_use <- left_join(tiktok_thisweek, tiktok_timethisweek, by=c("wave","ResponseId", "category")) %>%
+  select(wave, ResponseId, category, app, tiktoktime)
   
+#Convert tiktok use to minutes
+  tiktok_use$tiktokmin = as.numeric(unlist(lapply(tiktok_use$tiktoktime, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  as.numeric(unlist(lapply(tiktok_use$tiktoktime, function (x) strsplit(x, ":")[[1]][2])))
+  
+  tiktok_use <- tiktok_use %>%
+    select(wave, ResponseId, tiktokmin)
+  
+ 
+  
+#Add social use & tiktok use column to data_copy
+  data_copy <- left_join(data_copy, tiktok_use)
+   data_copy$tiktokmin[is.na(data_copy$tiktokmin)] <- 0 #change NA for tiktok time to 0 so we can add it to social use
+   data_copy <- left_join(data_copy, socialuse)
+  
+  
+#Add tiktok use to social time, new column for screen time as proportion of total use
+  data_copy <- data_copy %>%
+    transform(socialtimemin_tik = socialtimemin + tiktokmin) %>%
+      transform(social_proportion = socialtimemin/tot_time_min)
 
 # Need to take notes into account? Days included? Last week's data?
-    
-#New column for screen time as proportion of total use:
-   # data_copy <- data_copy %>%
- # transform(social_proportion = socialtimemin/tot_time_min)
+
 ```
 
 Data Viz for Screentime
