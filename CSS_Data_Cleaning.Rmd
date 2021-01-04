@@ -209,7 +209,7 @@ Screentime
 # For each wave, check if screentime is complete, search app_category_this_week_[1-5] for social or Social, find matching time
 #screentime_complete==1 & ifelse(grepl("social"|"Social", data_copy$[app_category_this_week[1-5]]), "yes", "no")
 
-#Get social screen use per week
+#'*Get social screen use THIS WEEK*
 
 #Convert format to long (category names)
 socialmediathisweek<-data_copy %>%
@@ -292,10 +292,112 @@ tiktok_use <- left_join(tiktok_thisweek, tiktok_timethisweek, by=c("wave","Respo
 #Add tiktok use to social time, new column for screen time as proportion of total use
   data_copy <- data_copy %>%
     transform(socialtimemin_tik = socialtimemin + tiktokmin) %>%
-      transform(social_proportion = socialtimemin/tot_time_min)
+      transform(social_proportion = socialtimemin_tik/tot_time_min)
+  
+  
+  #'*Get social screen use LAST WEEK*
+  
+  #Convert format to long (category names)
+socialmedialastweek<-data_copy %>%
+  select(wave, ResponseId,contains("app_category_last_week_")) %>% 
+  gather(key = category, value=app,3:7)
 
-# Need to take notes into account? Days included? Last week's data?
 
+#Convert format to long (category time), change values to match categories above
+socialmediatimelastweek<-data_copy %>%
+  select(wave, ResponseId,contains("app_category_time_last_week_")) %>% 
+  gather(key=category,value=socialtime,3:7) %>%
+  mutate(category = case_when(
+    category=="app_category_time_last_week_1" ~ "app_category_last_week_1",
+    category=="app_category_time_last_week_2" ~ "app_category_last_week_2",
+    category=="app_category_time_last_week_3" ~ "app_category_last_week_3",
+    category=="app_category_time_last_week_4" ~ "app_category_last_week_4",
+    category=="app_category_time_last_week_5" ~ "app_category_last_week_5"
+  ))
+
+#Join to get time per category, filter out non social networking values
+socialuse_last<-left_join(socialmedialastweek, socialmediatimelastweek,by=c("wave","ResponseId", "category")) %>%
+  filter(app=="Social Networking" | app=="social networking") 
+
+
+#Convert time to numeric value (i.e. 2:04 to 124 minutes)
+  socialuse_last$socialtimemin_last = as.numeric(unlist(lapply(socialuse_last$socialtime, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  as.numeric(unlist(lapply(socialuse_last$socialtime, function (x) strsplit(x, ":")[[1]][2])))
+  
+  
+#All Screen Use:
+  data_copy$tot_time_min_last = as.numeric(unlist(lapply(data_copy$tot_time_last_week, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  as.numeric(unlist(lapply(data_copy$tot_time_last_week, function (x) strsplit(x, ":")[[1]][2])))
+  
+#Average Use
+    data_copy$avg_time_min_last = as.numeric(unlist(lapply(data_copy$avg_time_last_week, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  as.numeric(unlist(lapply(data_copy$avg_time_last_week, function (x) strsplit(x, ":")[[1]][2])))
+    
+    
+#Add tiktok to social use
+    #if tiktok in most used apps, extract matching time [top_app_name_this_week], [app_time_by_name]
+    #add to social use
+    
+    tiktok_lastweek<-data_copy %>%
+  select(wave, ResponseId,contains("top_app_name_last_week_")) %>% 
+  gather(key = category, value=app,3:7) %>%
+      filter(app=="TikTok")
+
+
+#Convert format to long (category time), change values to match categories above
+tiktok_timelastweek<-data_copy %>%
+  select(wave, ResponseId,contains("app_time_by_name_last")) %>% 
+  gather(key=category,value=tiktoktime,3:7) %>%
+  mutate(category = case_when(
+    category=="app_time_by_name_last_week_1" ~ "top_app_name_last_week_1",
+    category=="app_time_by_name_last_week_2" ~ "top_app_name_last_week_2",
+    category=="app_time_by_name_last_week_3" ~ "top_app_name_last_week_3",
+    category=="app_time_by_name_last_week_4" ~ "top_app_name_last_week_4",
+    category=="app_time_by_name_last_week_5" ~ "top_app_name_last_week_5"
+  ))
+
+#Get tiktok use only by participant and wave
+tiktok_use_last <- left_join(tiktok_lastweek, tiktok_timelastweek, by=c("wave","ResponseId", "category")) %>%
+  select(wave, ResponseId, category, app, tiktoktime)
+  
+#Convert tiktok use to minutes
+  tiktok_use_last$tiktokmin_last = as.numeric(unlist(lapply(tiktok_use_last$tiktoktime, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  as.numeric(unlist(lapply(tiktok_use_last$tiktoktime, function (x) strsplit(x, ":")[[1]][2])))
+  
+  tiktok_use_last <- tiktok_use_last %>%
+    select(wave, ResponseId, tiktokmin_last)
+  
+  #Add social use & tiktok use column to data_copy
+  data_copy <- left_join(data_copy, tiktok_use_last)
+   data_copy$tiktokmin_last[is.na(data_copy$tiktokmin_last)] <- 0 #change NA for tiktok time to 0 so we can add it to social use
+   data_copy <- left_join(data_copy, socialuse_last)
+  
+  
+#Add tiktok use to social time, new column for screen time as proportion of total use
+  data_copy <- data_copy %>%
+    transform(socialtimemin_tik_last = socialtimemin_last + tiktokmin_last) %>%
+      transform(social_proportion_last = socialtimemin_tik_last/tot_time_min_last)
+  
+
+
+  
+  
+  #'*Make new column for final use (total, avg, total social) *
+  #compare days represented for this_week and last_week, record which one has more days represented
+    #if days represented in this week > days represented in last week
+      #paste this week values into final column
+    #else
+      #paste last week values into final column
+  #Choose which week of total social screen use (minutes) to use
+  data_copy$final_social_min <- data_copy$socialtimemin_tik
+  data_copy$final_social_min[data_copy$days_represented_this_week < data_copy$days_represented_last_week] <- data_copy$socialtimemin_tik_last
+  #Choose which week of social use proportion to use
+  data_copy$final_social_prop <- data_copy$social_proportion
+  data_copy$final_social_prop[data_copy$days_represented_this_week < data_copy$days_represented_last_week] <- data_copy$social_proportion_last
+  
+  
+  
+  
 ```
 
 Data Viz for Screentime
