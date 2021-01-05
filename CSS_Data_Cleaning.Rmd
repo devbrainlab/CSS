@@ -306,7 +306,7 @@ socialmedialastweek<-data_copy %>%
 #Convert format to long (category time), change values to match categories above
 socialmediatimelastweek<-data_copy %>%
   select(wave, ResponseId,contains("app_category_time_last_week_")) %>% 
-  gather(key=category,value=socialtime,3:7) %>%
+  gather(key=category,value=socialtime_last,3:7) %>%
   mutate(category = case_when(
     category=="app_category_time_last_week_1" ~ "app_category_last_week_1",
     category=="app_category_time_last_week_2" ~ "app_category_last_week_2",
@@ -317,12 +317,13 @@ socialmediatimelastweek<-data_copy %>%
 
 #Join to get time per category, filter out non social networking values
 socialuse_last<-left_join(socialmedialastweek, socialmediatimelastweek,by=c("wave","ResponseId", "category")) %>%
-  filter(app=="Social Networking" | app=="social networking") 
+  filter(app=="Social Networking" | app=="social networking") %>%
+     select("ResponseId", "socialtimemin_last")
 
 
 #Convert time to numeric value (i.e. 2:04 to 124 minutes)
-  socialuse_last$socialtimemin_last = as.numeric(unlist(lapply(socialuse_last$socialtime, function (x) strsplit(x, ":")[[1]][1])))*60 +
-  as.numeric(unlist(lapply(socialuse_last$socialtime, function (x) strsplit(x, ":")[[1]][2])))
+  socialuse_last$socialtimemin_last = as.numeric(unlist(lapply(socialuse_last$socialtime_last, function (x) strsplit(x, ":")[[1]][1])))*60 +
+  as.numeric(unlist(lapply(socialuse_last$socialtime_last, function (x) strsplit(x, ":")[[1]][2])))
   
   
 #All Screen Use:
@@ -370,7 +371,7 @@ tiktok_use_last <- left_join(tiktok_lastweek, tiktok_timelastweek, by=c("wave","
   #Add social use & tiktok use column to data_copy
   data_copy <- left_join(data_copy, tiktok_use_last)
    data_copy$tiktokmin_last[is.na(data_copy$tiktokmin_last)] <- 0 #change NA for tiktok time to 0 so we can add it to social use
-   data_copy <- left_join(data_copy, socialuse_last)
+   data_copy <- left_join(data_copy, socialuse_last, by="ResponseId")
   
   
 #Add tiktok use to social time, new column for screen time as proportion of total use
@@ -388,12 +389,15 @@ tiktok_use_last <- left_join(tiktok_lastweek, tiktok_timelastweek, by=c("wave","
       #paste this week values into final column
     #else
       #paste last week values into final column
+  #change NA for days represented to 0 so we can compare it
+  data_copy$days_this_week[is.na(data_copy$days_this_week)] <- 0 
+  data_copy$days_last_week[is.na(data_copy$days_last_week)] <- 0 
   #Choose which week of total social screen use (minutes) to use
   data_copy$final_social_min <- data_copy$socialtimemin_tik
-  data_copy$final_social_min[data_copy$days_represented_this_week < data_copy$days_represented_last_week] <- data_copy$socialtimemin_tik_last
+  data_copy$final_social_min[data_copy$days_this_week < data_copy$days_last_week] <- data_copy$socialtimemin_tik_last
   #Choose which week of social use proportion to use
   data_copy$final_social_prop <- data_copy$social_proportion
-  data_copy$final_social_prop[data_copy$days_represented_this_week < data_copy$days_represented_last_week] <- data_copy$social_proportion_last
+  data_copy$final_social_prop[data_copy$days_this_week < data_copy$days_last_week] <- data_copy$social_proportion_last
   
   
   
@@ -500,16 +504,22 @@ transform(prop_friend_stability = common_friends / unique_friends)
 save(netcanvas_cleaned, file="netcanvas_cleaned.Rda")
 
 processed_data <- left_join(data_copy, netcanvas_cleaned)
-processed_data <- left_join(processed_data, socialuse)
 processed_data <- processed_data %>%
   select(-c(names, category, app))
 
-#New column for screen time as proportion of total use:
-    processed_data <- processed_data %>%
-  transform(social_proportion = socialtimemin/tot_time_min)
+
 
 save(processed_data, file="processed_data.Rda")
 ```
+
+Make Data Frame for Analysis
+```{r}
+
+analysis_data <- processed_data %>%
+  select(1:7, 192:202, 216:220)
+
+```
+
 
 Social Connections Plots
 ```{r}
