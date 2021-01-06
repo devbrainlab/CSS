@@ -385,19 +385,25 @@ tiktok_use_last <- left_join(tiktok_lastweek, tiktok_timelastweek, by=c("wave","
   
   #'*Make new column for final use (total, avg, total social) *
   #compare days represented for this_week and last_week, record which one has more days represented
-    #if days represented in this week > days represented in last week
+    #if days represented in this week > days represented in last week & this week !NA
       #paste this week values into final column
     #else
       #paste last week values into final column
   #change NA for days represented to 0 so we can compare it
   data_copy$days_this_week[is.na(data_copy$days_this_week)] <- 0 
   data_copy$days_last_week[is.na(data_copy$days_last_week)] <- 0 
+  #Choose which week of total time to use
+  data_copy$final_total_min <- data_copy$tot_time_min  
+  data_copy$final_total_min[(data_copy$days_this_week < data_copy$days_last_week) | is.na(data_copy$tot_time_min)] <- data_copy$tot_time_min_last[(data_copy$days_this_week < data_copy$days_last_week) | is.na(data_copy$tot_time_min)]  
+  #Choose which week of average time to use
+  data_copy$final_avg_min <- data_copy$avg_time_min
+  data_copy$final_avg_min[(data_copy$days_this_week < data_copy$days_last_week)| is.na(data_copy$avg_time_min)] <- data_copy$avg_time_min_last[(data_copy$days_this_week < data_copy$days_last_week) | is.na(data_copy$avg_time_min)]
   #Choose which week of total social screen use (minutes) to use
   data_copy$final_social_min <- data_copy$socialtimemin_tik
-  data_copy$final_social_min[data_copy$days_this_week < data_copy$days_last_week] <- data_copy$socialtimemin_tik_last
+  data_copy$final_social_min[(data_copy$days_this_week < data_copy$days_last_week)| is.na(data_copy$socialtimemin_tik)] <- data_copy$socialtimemin_tik_last[(data_copy$days_this_week < data_copy$days_last_week) | is.na(data_copy$socialtimemin_tik)]
   #Choose which week of social use proportion to use
   data_copy$final_social_prop <- data_copy$social_proportion
-  data_copy$final_social_prop[data_copy$days_this_week < data_copy$days_last_week] <- data_copy$social_proportion_last
+  data_copy$final_social_prop[(data_copy$days_this_week < data_copy$days_last_week)| is.na(data_copy$social_proportion)] <- data_copy$social_proportion_last[(data_copy$days_this_week < data_copy$days_last_week) | is.na(data_copy$social_proportion)]
   
   
   
@@ -516,7 +522,7 @@ Make Data Frame for Analysis
 ```{r}
 
 analysis_data <- processed_data %>%
-  select(1:7, 192:202, 216:220)
+  select(1:7, 99:100, 192:202, 216:222) #202, drop 210, 99:100
 
 ```
 
