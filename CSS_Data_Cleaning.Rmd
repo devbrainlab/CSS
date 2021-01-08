@@ -46,10 +46,14 @@ root_path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/"
 Import data files
 ```{r}
 #read in Qualtrics data
-qualtrics <- list.files(path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/Qualtrics", full.names = TRUE) %>% 
-  lapply(read_excel) %>% 
+qualtrics <- list.files(path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/Qualtrics", full.names = TRUE) %>% #strings as characters = false
+  lapply(read_excel) %>% #change to read csv, parse by/str split, take first character, keep full date in case we need it later
   bind_rows %>%
-  select(7,9,27:96, 137, 142, 143)
+  select(1:2,7,9,27:96, 137, 142, 143)
+
+#Convert start dates & end dates to proper format
+qualtrics$StartDate <- as.Date(as.numeric(qualtrics$StartDate), origin="1899-12-30")
+qualtrics$EndDate <- as.Date(as.numeric(qualtrics$EndDate), origin="1899-12-30")
 
 #Convert to numeric (NOTE: Need to do this to other columns as well, figure out which ones & potentially do this on import)
 qualtrics$wave <- as.numeric(qualtrics$wave)
@@ -124,6 +128,10 @@ Calculate Sum Scores + Subscores
 
 #create copy for testing
 data_copy <- data.frame(all_data)
+
+#Get month for start/end date
+data_copy$StartMonth <- months(data_copy$StartDate)
+data_copy$EndMonth <- months(data_copy$EndDate)
 
 #Recode YAM-5
 data_copy <- data_copy %>%
@@ -318,7 +326,7 @@ socialmediatimelastweek<-data_copy %>%
 #Join to get time per category, filter out non social networking values
 socialuse_last<-left_join(socialmedialastweek, socialmediatimelastweek,by=c("wave","ResponseId", "category")) %>%
   filter(app=="Social Networking" | app=="social networking") %>%
-     select("ResponseId", "socialtimemin_last")
+     select("ResponseId", "socialtime_last")
 
 
 #Convert time to numeric value (i.e. 2:04 to 124 minutes)
