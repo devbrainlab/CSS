@@ -518,12 +518,35 @@ for (kid in unique(netcanvas_by_record$record_id)) {
 netcanvas_cleaned <- netcanvas_cleaned %>%
 transform(prop_friend_stability = common_friends / unique_friends)
 
+
+#average stability over waves
+mean_test <- analysis_data %>%
+group_by(record_id) %>%
+  summarize(avg_friend_stability = mean(na.omit(prop_friend_stability)))
+
+
 save(netcanvas_cleaned, file="netcanvas_cleaned.Rda")
 
 processed_data <- left_join(data_copy, netcanvas_cleaned)
 processed_data <- processed_data %>%
-  select(-c(names, category, app))
+  select(-c(names, category, app)) %>%
+  filter(Finished == "True")
 
+#Manually fix values for record ids
+  processed_data[275,1]= 37
+  processed_data[276,1]= 41
+  processed_data[277,1]= 37
+  processed_data[278,1]= 49
+  processed_data[279,1]= 49
+  processed_data[280,1]= 3
+  processed_data[281,1]= 37
+  processed_data[282,1]= 38
+  processed_data[284,1]= 41
+  
+  processed_data <- processed_data %>%
+    filter(!is.na(record_id)) 
+    
+    processed_data <- processed_data[order(processed_data$record_id, processed_data$wave),]
 
 
 save(processed_data, file="processed_data.Rda")
@@ -536,6 +559,8 @@ analysis_data <- processed_data %>%
   #select(1:7, 99:100, 192:202, 216:222) #202, drop 210, 99:100
   select(1:9, 194:206, 221:227)
 save(analysis_data, file="analysis_data.Rda")
+
+
 
 ```
 
