@@ -519,10 +519,7 @@ netcanvas_cleaned <- netcanvas_cleaned %>%
 transform(prop_friend_stability = common_friends / unique_friends)
 
 
-#average stability over waves
-mean_test <- analysis_data %>%
-group_by(record_id) %>%
-  summarize(avg_friend_stability = mean(na.omit(prop_friend_stability)))
+
 
 
 save(netcanvas_cleaned, file="netcanvas_cleaned.Rda")
@@ -559,6 +556,12 @@ analysis_data <- processed_data %>%
   #select(1:7, 99:100, 192:202, 216:222) #202, drop 210, 99:100
   select(1:9, 194:206, 221:227)
 save(analysis_data, file="analysis_data.Rda")
+
+
+#average stability over waves
+avg_friend_stability <- analysis_data %>%
+group_by(record_id) %>%
+  summarize(avg_friend_stability = mean(na.omit(prop_friend_stability)))
 
 
 
@@ -769,18 +772,92 @@ for(kid in unique(id)){
 
 ```
 
+Explore final data
+```{r}
+#Scatterplots per wave/variable
+ggplot(filter(analysis_data, wave==10), aes(x = final_social_min, y = prop_friend_stability)) +
+    geom_point()
+
+ggplot(filter(analysis_data, wave==10), aes(x = final_social_prop, y = prop_friend_stability)) +
+    geom_point()
+
+#Plot variable over waves, line connecting each participant (Spaghetti plots)
+ggplot(analysis_data, aes(x = wave, y = yam_total)) +
+  geom_line(aes(color = record_id)) 
+
+qplot(x=wave, y=yam_total, colour = factor(record_id),
+data = analysis_data, geom = "line")
+
+qplot(x=wave, y=mspss_total, colour = factor(record_id),
+data = analysis_data, geom = "line")
+
+qplot(x=wave, y=prop_friend_stability, colour = factor(record_id),
+data = analysis_data, geom = "line")
+
+qplot(x=wave, y=final_social_min, colour = factor(record_id),
+data = analysis_data, geom = "line")
+
+qplot(x=wave, y=final_social_prop, colour = factor(record_id),
+data = analysis_data, geom = "line")
+
+#Plot variable over waves, mean for each age group
+#aggregate
+sample_sum <- analysis_data %>%
+  group_by(wave, age_years) %>%
+  summarize(yam_mean = mean(yam_total, na.rm=TRUE), mspss_mean=mean(mspss_total, na.rm=TRUE), social_min_mean=mean(final_social_min, na.rm=TRUE), social_prop_mean=mean(final_social_prop, na.rm=TRUE), total_min_mean=mean(final_total_min, na.rm=TRUE),
+            total_avg_mean=mean(final_total_min, na.rm=TRUE), stability_mean=mean(prop_friend_stability, na.rm=TRUE))%>%
+  ungroup()
+#
+qplot(x=wave, y=yam_mean, colour = factor(age_years),
+data = sample_sum, geom = "line")
+
+qplot(x=wave, y=mspss_mean, colour = factor(age_years),
+data = sample_sum, geom = "line")
+
+qplot(x=wave, y=social_min_mean, colour = factor(age_years),
+data = sample_sum, geom = "line")
+
+qplot(x=wave, y=social_prop_mean, colour = factor(age_years),
+data = sample_sum, geom = "line")
+
+qplot(x=wave, y=total_min_mean, colour = factor(age_years),
+data = sample_sum, geom = "line")
+
+qplot(x=wave, y=total_avg_mean, colour = factor(age_years),
+data = sample_sum, geom = "line")
+
+qplot(x=wave, y=stability_mean, colour = factor(age_years),
+data = sample_sum, geom = "line")
+
+
+#Basic model testing
+test_model_min <- lme(mspss_total ~ final_social_min, random=~1|record_id, data=analysis_data,na.action=na.omit)
+summary(test_model_min)
+
+test_model_prop <- lme(mspss_total ~ final_social_prop, random=~1|record_id, data=analysis_data,na.action=na.omit)
+summary(test_model_prop)
+```
+
 Start Building Models
 ```{r}
 
 # Models will include a random intercept for participant
 # include month of data collection to account for differing restrictions/guidelines
 # social use: total time & proportion of overall use
+# Use lme4
 
-#Model 1: socially focused screen time & anxiety: yam_total ~ socialtimemin
-#Model 2: socially focused screen time & perceived social support: mspss_total ~ socialtimemin
-#Model 3: socially focused screen time & stable social connections: prop_friend_stability ~ socialtimemin
+#Model 1a: socially focused screen time & anxiety: yam_total ~ final_social_min, random=~1|record_id
+#Model 1b: socially focused screen time & anxiety: yam_total ~ final_social_prop, random=~1|record_id
+#Model 2a: socially focused screen time & perceived social support: mspss_total ~ final_social_min, random=~1|record_id
+#Model 2b: socially focused screen time & perceived social support: mspss_total ~ final_social_prop, random=~1|record_id
+#Model 3a: socially focused screen time & stable social connections: prop_friend_stability ~ final_social_min, random=~1|record_id
+#Model 3b: socially focused screen time & stable social connections: prop_friend_stability ~ final_social_prop, random=~1|record_id
+#Additional: Subscores (yam & mspss), interactions
 
-fit <- lme(socialtimemin ~ yam_total + mspss_total + prop_friend_stability, random = ~1|record_id, data=processed_data, na.action=na.omit)
+#Template:
+mod_Xab <- lme(~, random = ~1|record_id, data=analysis_data, na.action=na.omit)
+
+fit <- lme(final_social_min ~ yam_total + mspss_total + prop_friend_stability, random = ~1|record_id, data=analysis_data, na.action=na.omit)
 summary(fit) # show results
 
 #Remove NAs and excluded participants (YAM & MSPSS)
