@@ -18,7 +18,9 @@ packages <-  c("tidyverse",
                "nlme", "lme4",
                "data.table", "psych",
                "parallel","lubridate",
-               "mgcv", "ggpubr", "broom", "table1", "apaTables", "readxl", "ggalluvial")
+               "mgcv", "ggpubr", "broom", 
+               "table1", "apaTables", "readxl", "ggalluvial",
+               "mlVAR")
 if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
   install.packages(setdiff(packages, rownames(installed.packages())))  
 }
@@ -927,6 +929,19 @@ mod_h1_prop <- lme(yam_total ~ final_social_prop,
               data=analysis_data,
               method="ML",
               na.action=na.omit)
+
+# Now let's try the VAR approach for lagged relationships
+var_h1 <- mlVAR(analysis_data,
+                c("yam_total", "final_total_min"),
+                "record_id",
+                estimator="lmer",
+                lags = 1,
+                temporal = "fixed")
+summary(var_h1)
+plot(var_h1, "fixed", title = "Estimated temporal relationships", layout = "circle")
+
+plot(var_h1, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle")
 
 # H2:
 
