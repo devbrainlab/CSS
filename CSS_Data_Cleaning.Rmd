@@ -44,7 +44,8 @@ root_path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/"
 
 
 Import data files
-```{r}
+Don't run! You don't need to.
+```{r eval=FALSE, include=FALSE}
 #read in Qualtrics data
 qualtrics <- list.files(path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/Qualtrics", full.names = TRUE) %>% #strings as characters = false
   lapply(read_excel) %>% #change to read csv, parse by/str split, take first character, keep full date in case we need it later
@@ -567,7 +568,6 @@ group_by(record_id) %>%
 
 ```
 
-
 Social Connections Plots
 ```{r}
 #Boxplot
@@ -876,10 +876,15 @@ Start Building Models
 # Use lme4
 
 #Model 1a: socially focused screen time & anxiety: yam_total ~ final_social_min, random=~1|record_id
+
 #Model 1b: socially focused screen time & anxiety: yam_total ~ final_social_prop, random=~1|record_id
+
 #Model 2a: socially focused screen time & perceived social support: mspss_total ~ final_social_min, random=~1|record_id
+
 #Model 2b: socially focused screen time & perceived social support: mspss_total ~ final_social_prop, random=~1|record_id
+
 #Model 3a: socially focused screen time & stable social connections: prop_friend_stability ~ final_social_min, random=~1|record_id
+
 #Model 3b: socially focused screen time & stable social connections: prop_friend_stability ~ final_social_prop, random=~1|record_id
 #Additional: Subscores (yam & mspss), interactions
 
@@ -892,6 +897,39 @@ summary(fit) # show results
 #Remove NAs and excluded participants (YAM & MSPSS)
 ##mspss_analysis <- subset(data_copy, (!(ResponseID %in% mspss_exclusion_ids)))
 #yam_analysis <- subset(data_copy, (!(ResponseID %in% yam_exclusion_ids)))
+
+
+```
+
+
+```{r}
+# We hypothesize that use of screen media, in particular screen media used for social engagement, provides a vital way for adolescents to connect with their friends and peers during periods of increased social isolation, such as the COVID-19 pandemic. Specifically, we think that elevated socially-focused screen media use may be related to a number of markers of well-being. We expect that anxiety will be lower and perceived social support will be higher in individuals with higher socially-focused screen media use. We also expect that individuals with more stable social ties have higher levels of socially-focused screen media use. 
+
+# H1: yam_total ~ final_total_min compared to yam_total ~ final_total_min + final_social_min NEATER ALTERNATIVE: yam_total ~ final_social_prop 
+
+mod_h1 <- lme(yam_total ~ final_total_min,
+              random = ~1|record_id,
+              data=(analysis_data %>% filter(!is.na(final_social_min))),
+              method="ML",
+              na.action=na.omit)
+
+mod_h1_soc <- lme(yam_total ~ final_total_min + final_social_min,
+                  random = ~1|record_id,
+                  data=(analysis_data %>% filter(!is.na(final_social_min))),
+                  method="ML",
+                  na.action=na.omit)
+
+anova(mod_h1,mod_h1_soc)
+
+# now look at the proportional method, prob gonna see the same thing
+mod_h1_prop <- lme(yam_total ~ final_social_prop,
+              random = ~1|record_id,
+              data=analysis_data,
+              method="ML",
+              na.action=na.omit)
+
+# H2:
+
 
 
 ```
