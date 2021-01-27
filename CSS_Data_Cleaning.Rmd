@@ -782,52 +782,81 @@ ggplot(filter(analysis_data, wave==10), aes(x = final_social_prop, y = prop_frie
     geom_point()
 
 #Plot variable over waves, line connecting each participant (Spaghetti plots)
-ggplot(analysis_data, aes(x = wave, y = yam_total)) +
+ggplot(analysis_data, aes(x = wave, y = yam_total)) +  #questionable
   geom_line(aes(color = record_id)) 
 
+#SPAGHETTI PLOTS
 qplot(x=wave, y=yam_total, colour = factor(record_id),
-data = analysis_data, geom = "line")
+data = analysis_data, geom = "line", main= "Anxiety Across Waves (per articipant)",xlab="Wave", ylab="YAM Score")  + theme(legend.position="none")
+ggsave("AnxietyParticipants.png")
 
 qplot(x=wave, y=mspss_total, colour = factor(record_id),
-data = analysis_data, geom = "line")
+data = analysis_data, geom = "line", main="Social Support Across Waves (per participant)", xlab="wave", ylab="Social Support") + theme(legend.position="none")
+ggsave("SocialSupportParticipants.png")
 
 qplot(x=wave, y=prop_friend_stability, colour = factor(record_id),
-data = analysis_data, geom = "line")
+data = analysis_data, geom = "line", main="Friend Stability Across Waves (per participant)", xlab="Wave", ylab="Friend Stability") + theme(legend.position="none")
+ggsave("FriendStabilityParticipants.png")
 
 qplot(x=wave, y=final_social_min, colour = factor(record_id),
-data = analysis_data, geom = "line")
+data = analysis_data, geom = "line", main="Social Screen Minutes Across Waves (per participant)", xlab="Wave", ylab="Social Screen Minutes") + theme(legend.position="none")
+ggsave("SocialMinutesParticipants.png")
 
 qplot(x=wave, y=final_social_prop, colour = factor(record_id),
-data = analysis_data, geom = "line")
+data = analysis_data, geom = "line", main="Social Screen Use Proportion Across Waves (per participant)", xlab="Wave", ylab="Social Screen Use Proportion") + theme(legend.position="none")
+ggsave("SocialProportionsParticipants.png")
 
-#Plot variable over waves, mean for each age group
+#GROUP AVERAGES OVER WAVES (PER AGE YEAR)
 #aggregate
 sample_sum <- analysis_data %>%
   group_by(wave, age_years) %>%
   summarize(yam_mean = mean(yam_total, na.rm=TRUE), mspss_mean=mean(mspss_total, na.rm=TRUE), social_min_mean=mean(final_social_min, na.rm=TRUE), social_prop_mean=mean(final_social_prop, na.rm=TRUE), total_min_mean=mean(final_total_min, na.rm=TRUE),
-            total_avg_mean=mean(final_total_min, na.rm=TRUE), stability_mean=mean(prop_friend_stability, na.rm=TRUE))%>%
+            total_avg_mean=mean(final_total_min, na.rm=TRUE), stability_mean=mean(prop_friend_stability, na.rm=TRUE),
+            yam_sd=sd(yam_total, na.rm=TRUE), mspss_sd=sd(mspss_total, na.rm=TRUE), social_min_sd=sd(final_social_min, na.rm=TRUE), social_prop_sd=sd(final_social_prop, na.rm=TRUE), total_min_sd=sd(final_total_min, na.rm=TRUE),
+            total_avg_sd=sd(final_total_min, na.rm=TRUE), stability_sd=sd(prop_friend_stability, na.rm=TRUE))%>%
   ungroup()
 #
 qplot(x=wave, y=yam_mean, colour = factor(age_years),
-data = sample_sum, geom = "line")
+data = sample_sum, geom = "line", main="Anxiety Across Waves (by age)", xlab="Wave", ylab="Anxiety") + labs(colour = 'Age') +
+    geom_errorbar(aes(ymin=yam_mean-yam_sd, ymax=yam_mean+yam_sd), width=.2,
+                 position=position_dodge(0.05))
+ggsave("AnxietyAge.png")
 
 qplot(x=wave, y=mspss_mean, colour = factor(age_years),
-data = sample_sum, geom = "line")
+data = sample_sum, geom = "line", main="Social Support Across Waves (by age)", xlab="Wave", ylab="Social Support") + labs(colour = 'Age') +
+    geom_errorbar(aes(ymin=mspss_mean-mspss_sd, ymax=mspss_mean+sd), width=.2,
+                 position=position_dodge(0.05))
+ggsave("SocialSupportAge.png")
 
 qplot(x=wave, y=social_min_mean, colour = factor(age_years),
-data = sample_sum, geom = "line")
+data = sample_sum, geom = "line", main="Social Screen Minutes Across Waves (by age)", xlab="Wave", ylab="Social Screen Minutes") + labs(colour = 'Age') +
+    geom_errorbar(aes(ymin=social_min_mean-social_min_sd, ymax=social_min_mean+social_min_sd), width=.2,
+                 position=position_dodge(0.05))
+ggsave("SocialMinutesAge.png")
 
 qplot(x=wave, y=social_prop_mean, colour = factor(age_years),
-data = sample_sum, geom = "line")
+data = sample_sum, geom = "line", main="Social Screen Proportion Across Waves (by age)", xlab="Wave", ylab="Social Screen Proportion") + labs(colour = 'Age') +
+    geom_errorbar(aes(ymin=social_prop_mean-social_prop_sd, ymax=social_prop_mean+social_prop_sd), width=.2,
+                 position=position_dodge(0.05))
+ggsave("SocialProortionAge.png")
 
 qplot(x=wave, y=total_min_mean, colour = factor(age_years),
-data = sample_sum, geom = "line")
+data = sample_sum, geom = "line", main="Total Screen Minutes Across Waves (by age)", xlab="Wave", ylab="Total Screen Minutes") + labs(colour = 'Age') +
+    geom_errorbar(aes(ymin=total_min_mean-total_min_sd, ymax=total_min_mean+total_min_sd), width=.2,
+                 position=position_dodge(0.05))
+ggsave("TotalScreenMinAge.png")
 
 qplot(x=wave, y=total_avg_mean, colour = factor(age_years),
-data = sample_sum, geom = "line")
+data = sample_sum, geom = "line", main="Average Screen Minutes Across Waves (by age)", xlab="Wave", ylab="Average Screen Minutes") + labs(colour = 'Age') +
+    geom_errorbar(aes(ymin=total_avg_mean-total_avg_sd, ymax=total_avg_mean+total_avg_sd), width=.2,
+                 position=position_dodge(0.05))
+ggsave("AvgScreenMinAge.png")
 
 qplot(x=wave, y=stability_mean, colour = factor(age_years),
-data = sample_sum, geom = "line")
+data = sample_sum, geom = "line",  main="Friend Stability Across Waves (by age)", xlab="Wave", ylab="Friend Stability") + labs(colour = 'Age') +
+    geom_errorbar(aes(ymin=stability_mean-stability_sd, ymax=stability_mean+stability_sd), width=.2,
+                 position=position_dodge(0.05))
+ggsave("FriendStabilityAge.png")
 
 
 #Basic model testing
