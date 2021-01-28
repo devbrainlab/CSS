@@ -861,12 +861,7 @@ data = sample_sum, geom = "line",  main="Friend Stability Across Waves (by age)"
 ggsave("FriendStabilityAge.png")
 
 
-#Basic model testing
-test_model_min <- lme(mspss_total ~ final_social_min, random=~1|record_id, data=analysis_data,na.action=na.omit)
-summary(test_model_min)
-
-test_model_prop <- lme(mspss_total ~ final_social_prop, random=~1|record_id, data=analysis_data,na.action=na.omit)
-summary(test_model_prop)
+#Plot measures aligned by day of survey
 ```
 
 Start Building Models
@@ -903,7 +898,7 @@ summary(fit) # show results
 
 ```
 
-
+Actual Models
 ```{r}
 # We hypothesize that use of screen media, in particular screen media used for social engagement, provides a vital way for adolescents to connect with their friends and peers during periods of increased social isolation, such as the COVID-19 pandemic. Specifically, we think that elevated socially-focused screen media use may be related to a number of markers of well-being. We expect that anxiety will be lower and perceived social support will be higher in individuals with higher socially-focused screen media use. We also expect that individuals with more stable social ties have higher levels of socially-focused screen media use. 
 
@@ -943,9 +938,81 @@ plot(var_h1, "fixed", title = "Estimated temporal relationships", layout = "circ
 plot(var_h1, "contemporaneous", title = "Estimated contemporaneous relationships", 
     layout = "circle")
 
-# H2:
+# H2: mspss_total ~ final_total_min compared to mspss_total ~ final_total_min + final_social_min
+
+mod_h2 <- lme(mspss_total ~ final_total_min,
+              random = ~1|record_id,
+              data=(analysis_data %>% filter(!is.na(final_social_min))),
+              method="ML",
+              na.action=na.omit)
+
+mod_h2_soc <- lme(mspss_total ~ final_total_min + final_social_min,
+                  random = ~1|record_id,
+                  data=(analysis_data %>% filter(!is.na(final_social_min))),
+                  method="ML",
+                  na.action=na.omit)
+
+anova(mod_h2,mod_h2_soc)
+
+#proportional method
+mod_h2_prop <- lme(mspss_total ~ final_social_prop,
+              random = ~1|record_id,
+              data=analysis_data,
+              method="ML",
+              na.action=na.omit)
+
+#lagged relationships
+var_h2 <- mlVAR(analysis_data,
+                c("mspss_total", "final_total_min"),
+                "record_id",
+                estimator="lmer",
+                lags = 1,
+                temporal = "fixed")
+summary(var_h2)
+plot(var_h2, "fixed", title = "Estimated temporal relationships", layout = "circle")
+
+plot(var_h2, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle")
+
+#H3: final_social_prop ~ prop_friend_stability
+
+mod_h3 <- lme(final_social_min ~ prop_friend_stability,
+              random = ~1|record_id,
+              data=analysis_data,
+              method="ML",
+              na.action=na.omit)
+
+mod_h3_prop <- lme(final_social_prop ~ prop_friend_stability,
+              random = ~1|record_id,
+              data=analysis_data,
+              method="ML",
+              na.action=na.omit)
 
 
+var_h3 <- mlVAR(analysis_data,
+                c("prop_friend_stability", "final_social_min"),
+                "record_id",
+                estimator="lmer",
+                lags = 1,
+                temporal = "fixed")
+summary(var_h3)
+plot(var_h3, "fixed", title = "Estimated temporal relationships", layout = "circle")
+
+plot(var_h3, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle")
+
+
+var_h3_prop <- mlVAR(analysis_data,
+                c("prop_friend_stability", "final_social_prop"),
+                "record_id",
+                estimator="lmer",
+                lags = 1,
+                temporal = "fixed")
+summary(var_h3_prop)
+plot(var_h3_prop, "fixed", title = "Estimated temporal relationships", layout = "circle")
+
+plot(var_h3_prop, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle")
 
 ```
 
