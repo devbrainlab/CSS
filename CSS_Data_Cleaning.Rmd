@@ -862,6 +862,24 @@ ggsave("FriendStabilityAge.png")
 
 
 #Plot measures aligned by day of survey
+qplot(x=StartDate, y=yam_total, colour=factor(record_id), data=analysis_data, geom = "line", main="Anxiety Over Time", xlab="Date", ylab="Anxiety")  + theme(legend.position="none")
+ggsave("YamDate.png")
+
+qplot(x=StartDate, y=mspss_total, colour=factor(record_id), data=analysis_data, geom = "line", main="Social Support Over Time", xlab="Date", ylab="Social Support")  + theme(legend.position="none")
+ggsave("MspssDate.png")
+
+qplot(x=StartDate, y=prop_friend_stability, colour=factor(record_id), data=analysis_data, geom = "line", main="Friend Stability Over Time", xlab="Date", ylab="Stability Proportion")  + theme(legend.position="none")
+ggsave("FriendStabilityDate.png")
+
+qplot(x=StartDate, y=final_total_min, colour=factor(record_id), data=analysis_data, geom = "line", main="Total Screen Use Over Time", xlab="Date", ylab="Screen Use (Minutes)")  + theme(legend.position="none")
+ggsave("TotalScreenUseDate.png")
+
+qplot(x=StartDate, y=final_social_min, colour=factor(record_id), data=analysis_data, geom = "line", main="Social Screen Use Over Time", xlab="Date", ylab="Screen Use (Minutes)")  + theme(legend.position="none")
+ggsave("TotalSocialUseDate.png")
+
+qplot(x=StartDate, y=final_social_prop, colour=factor(record_id), data=analysis_data, geom = "line", main="Social Use Proportion Over Time", xlab="Date", ylab="Social Use Proportion")  + theme(legend.position="none")
+ggsave("SocialUseProportionDate.png")
+
 ```
 
 Start Building Models
@@ -969,12 +987,17 @@ var_h2 <- mlVAR(analysis_data,
                 lags = 1,
                 temporal = "fixed")
 summary(var_h2)
-plot(var_h2, "fixed", title = "Estimated temporal relationships", layout = "circle")
+plot(var_h2, "temporal", title = "Estimated temporal relationships", layout = "circle")
 
 plot(var_h2, "contemporaneous", title = "Estimated contemporaneous relationships", 
     layout = "circle")
 
 #H3: final_social_prop ~ prop_friend_stability
+mod_h3_tot <- lme(final_total_min ~ prop_friend_stability,
+              random = ~1|record_id,
+              data=analysis_data,
+              method="ML",
+              na.action=na.omit)
 
 mod_h3 <- lme(final_social_min ~ prop_friend_stability,
               random = ~1|record_id,
@@ -996,9 +1019,12 @@ var_h3 <- mlVAR(analysis_data,
                 lags = 1,
                 temporal = "fixed")
 summary(var_h3)
-plot(var_h3, "fixed", title = "Estimated temporal relationships", layout = "circle")
+plot(var_h3, "temporal", title = "Estimated temporal relationships", layout = "circle")
 
 plot(var_h3, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle")
+
+plot(var_h3, "between", title = "Between-person relationships", 
     layout = "circle")
 
 
@@ -1009,10 +1035,32 @@ var_h3_prop <- mlVAR(analysis_data,
                 lags = 1,
                 temporal = "fixed")
 summary(var_h3_prop)
-plot(var_h3_prop, "fixed", title = "Estimated temporal relationships", layout = "circle")
+plot(var_h3_prop, "temporal", title = "Estimated temporal relationships", layout = "circle")
 
 plot(var_h3_prop, "contemporaneous", title = "Estimated contemporaneous relationships", 
     layout = "circle")
+
+plot(var_h3_prop, "between", title = "Between-person relationships", layout = "circle")
+
+
+
+
+#yam and mspss
+
+var_h4 <- mlVAR(analysis_data,
+                c("yam_total","mspss_total", "final_total_min"),
+                "record_id",
+                estimator="lmer",
+                lags = 1,
+                temporal = "fixed")
+summary(var_h4)
+
+
+plot(var_h4, "temporal", title = "Estimated temporal relationships", layout = "circle")
+
+plot(var_h4, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle")
+
 
 ```
 
