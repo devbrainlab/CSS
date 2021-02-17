@@ -20,7 +20,7 @@ packages <-  c("tidyverse",
                "parallel","lubridate",
                "mgcv", "ggpubr", "broom", 
                "table1", "apaTables", "readxl", "ggalluvial",
-               "mlVAR")
+               "mlVAR", "pompom")
 if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
   install.packages(setdiff(packages, rownames(installed.packages())))  
 }
@@ -49,7 +49,7 @@ Import data files
 Don't run! You don't need to.
 ```{r eval=FALSE, include=FALSE}
 #read in Qualtrics data
-qualtrics <- list.files(path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/Qualtrics", full.names = TRUE) %>% #strings as characters = false
+qualtrics_k <- list.files(path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/Qualtrics", full.names = TRUE) %>% #strings as characters = false
   lapply(read_excel) %>% #change to read csv, parse by/str split, take first character, keep full date in case we need it later
   bind_rows %>%
   select(1:2,7,9,27:96, 137, 142, 143)
@@ -774,6 +774,23 @@ for(kid in unique(id)){
 
 ```
 
+Demographics (re-calculation)
+```{r}
+age_calc <- analysis_data %>%
+  select("age_years", "age_months", "wave") %>%
+  filter(wave==1)
+ 
+
+age_calc$age_years <- as.numeric(age_calc$age_years)
+age_calc$age_months <- as.numeric(age_calc$age_months)
+#age_calc[is.na(age_calc)] <- 0
+
+age_calc$years_in_months <- age_calc$age_years*12 
+age_calc$age_in_months <- age_calc$years_in_months + age_calc$age_months#rowSums(age_calc[2,4])
+
+mean_age <- mean(age_calc$age_in_months, na.rm=TRUE)
+sd_age <- sd(age_calc$age_in_months, na.rm=TRUE)
+```
 Explore final data
 ```{r}
 #Scatterplots per wave/variable
@@ -797,12 +814,16 @@ data = analysis_data, geom = "line", main="Social Support Across Waves (per part
 ggsave("SocialSupportParticipants.png")
 
 qplot(x=wave, y=prop_friend_stability, colour = factor(record_id),
-data = analysis_data, geom = "line", main="Friend Stability Across Waves (per participant)", xlab="Wave", ylab="Friend Stability") + theme(legend.position="none")
-ggsave("FriendStabilityParticipants.png")
+data = subset(analysis_data, wave!=1), geom = "line", main="Friend Stability Across Waves (per participant)", xlab="Wave", ylab="Friend Stability") + theme(legend.position="none")
+ggsave("FriendStabilityParticipants_Subset.png")
 
 qplot(x=wave, y=final_social_min, colour = factor(record_id),
 data = analysis_data, geom = "line", main="Social Screen Minutes Across Waves (per participant)", xlab="Wave", ylab="Social Screen Minutes") + theme(legend.position="none")
 ggsave("SocialMinutesParticipants.png")
+
+qplot(x=wave, y=final_total_min, colour = factor(record_id),
+data = analysis_data, geom = "line", main="Total Screen Minutes Across Waves (per participant)", xlab="Wave", ylab="Total Screen Minutes") + theme(legend.position="none")
+ggsave("TotalMinutesParticipants.png")
 
 qplot(x=wave, y=final_social_prop, colour = factor(record_id),
 data = analysis_data, geom = "line", main="Social Screen Use Proportion Across Waves (per participant)", xlab="Wave", ylab="Social Screen Use Proportion") + theme(legend.position="none")
@@ -840,7 +861,7 @@ qplot(x=wave, y=social_prop_mean, colour = factor(age_years),
 data = sample_sum, geom = "line", main="Social Screen Proportion Across Waves (by age)", xlab="Wave", ylab="Social Screen Proportion") + labs(colour = 'Age') +
     geom_errorbar(aes(ymin=social_prop_mean-social_prop_sd, ymax=social_prop_mean+social_prop_sd), width=.2,
                  position=position_dodge(0.05))
-ggsave("SocialProortionAge.png")
+ggsave("SocialProportionAge.png")
 
 qplot(x=wave, y=total_min_mean, colour = factor(age_years),
 data = sample_sum, geom = "line", main="Total Screen Minutes Across Waves (by age)", xlab="Wave", ylab="Total Screen Minutes") + labs(colour = 'Age') +
@@ -855,10 +876,10 @@ data = sample_sum, geom = "line", main="Average Screen Minutes Across Waves (by 
 ggsave("AvgScreenMinAge.png")
 
 qplot(x=wave, y=stability_mean, colour = factor(age_years),
-data = sample_sum, geom = "line",  main="Friend Stability Across Waves (by age)", xlab="Wave", ylab="Friend Stability") + labs(colour = 'Age') +
-    geom_errorbar(aes(ymin=stability_mean-stability_sd, ymax=stability_mean+stability_sd), width=.2,
-                 position=position_dodge(0.05))
-ggsave("FriendStabilityAge.png")
+data = subset(sample_sum,wave!=1), geom = "line",  main="Friend Stability Across Waves (by age)", xlab="Wave", ylab="Friend Stability") + labs(colour = 'Age') #+
+   # geom_errorbar(aes(ymin=stability_mean-stability_sd, ymax=stability_mean+stability_sd), width=.2,
+               #  position=position_dodge(0.05))
+ggsave("FriendStabilityAge_Subset.png")
 
 
 #Plot measures aligned by day of survey
@@ -916,7 +937,8 @@ summary(fit) # show results
 
 ```
 
-Actual Models
+
+Actual Models (Between-Participant)
 ```{r}
 # We hypothesize that use of screen media, in particular screen media used for social engagement, provides a vital way for adolescents to connect with their friends and peers during periods of increased social isolation, such as the COVID-19 pandemic. Specifically, we think that elevated socially-focused screen media use may be related to a number of markers of well-being. We expect that anxiety will be lower and perceived social support will be higher in individuals with higher socially-focused screen media use. We also expect that individuals with more stable social ties have higher levels of socially-focused screen media use. 
 
@@ -956,6 +978,21 @@ plot(var_h1, "fixed", title = "Estimated temporal relationships", layout = "circ
 plot(var_h1, "contemporaneous", title = "Estimated contemporaneous relationships", 
     layout = "circle")
 
+plot(var_h1, "between", title="between-person", layout="circle")
+
+#lagged w/ prop
+var_h1_prop <- mlVAR(analysis_data,
+                c("yam_total", "final_social_prop"),
+                "record_id",
+                estimator="lmer",
+                lags = 1,
+                temporal = "fixed")
+summary(var_h1_prop)
+plot(var_h1_prop, "fixed", title = "Estimated temporal relationships", layout = "circle")
+
+plot(var_h1_prop, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle")
+
 # H2: mspss_total ~ final_total_min compared to mspss_total ~ final_total_min + final_social_min
 
 mod_h2 <- lme(mspss_total ~ final_total_min,
@@ -990,6 +1027,31 @@ summary(var_h2)
 plot(var_h2, "temporal", title = "Estimated temporal relationships", layout = "circle")
 
 plot(var_h2, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle")
+
+#lagged w/ proportion
+var_h2_prop <- mlVAR(analysis_data,
+                c("mspss_total", "final_social_prop"),
+                "record_id",
+                estimator="lmer",
+                lags = 1,
+                temporal = "fixed")
+summary(var_h2_prop)
+plot(var_h2_prop, "temporal", title = "Estimated temporal relationships", layout = "circle")
+
+plot(var_h2_prop, "contemporaneous", title = "Estimated contemporaneous relationships", 
+    layout = "circle")
+#lagged w/ social
+var_h2_social <- var_h2 <- mlVAR(analysis_data,
+                c("mspss_total", "final_social_min"),
+                "record_id",
+                estimator="lmer",
+                lags = 1,
+                temporal = "fixed")
+summary(var_h2_social)
+plot(var_h2_social, "temporal", title = "Estimated temporal relationships", layout = "circle")
+
+plot(var_h2_social, "contemporaneous", title = "Estimated contemporaneous relationships", 
     layout = "circle")
 
 #H3: final_social_prop ~ prop_friend_stability
@@ -1064,3 +1126,59 @@ plot(var_h4, "contemporaneous", title = "Estimated contemporaneous relationships
 
 ```
 
+
+Standardize Data for within-participant analyses
+```{r}
+#standardize specific columns
+standardized_analysis_data <- data.frame(analysis_data)
+
+#grand-mean centering (I think)
+standardized_analysis_data[c(12:26)] <- lapply(standardized_analysis_data[c(12:26)], 
+                             function(x) c(scale(x, center=TRUE, scale=TRUE)))
+describe(standardized_analysis_data)
+
+# Grand Mean, Within-Person Mean, Between-Person mean
+standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id) %>% 
+  mutate(
+    fwkstrs_mean2 = mean(fwkstrs, na.rm = T),
+    fwkdis_mean2 = mean(fwkdis, na.rm = T)
+  ) %>% ungroup() %>% 
+  mutate(
+    fwkstrs_c2 = scale(fwkstrs, center = T, scale = F),
+    fwkdis_c2 = scale(fwkdis, center = T, scale = F),
+    
+    fwkstrs_cw2 = fwkstrs - fwkstrs_mean2,
+    fwkdis_cw2 = fwkdis - fwkdis_mean2,
+
+    fwkstrs_cb2 = fwkstrs_c2 - fwkstrs_cw2,
+    fwkdis_cb2 = fwkdis_c2 - fwkdis_cw2
+  )
+
+
+#######Use this
+#Center within-participant
+#mutate at columns & create new columns with _scaled at end
+standardized_analysis_data <- standardized_analysis_data %>% 
+  group_by(record_id) %>%
+  mutate_at(.vars = colnames(standardized_analysis_data)[12:29], 
+            .funs = list("scaled" = scale(.,na.rm=TRUE))) %>%   #find out how to add na.rm=TRUE, maybe? seems to not be an issue so far
+  ungroup()
+```
+
+Models accounting for within-person variation
+```{r}
+
+scale_model_test <- mlVAR(
+  analysis_data, c("yam_total", "final_total_min"), "record_id", lags=1, estimator="lmer", temporal="fixed", scale=TRUE, scaleWithin = FALSE
+)
+
+scale_model_test_precentered <- mlVAR(
+  standardized_analysis_data, c("yam_total_scaled", "final_total_min_scaled"), "record_id", lags=1, estimator="lmer", temporal="fixed", scale=FALSE
+)
+
+summary(scale_model_test)
+summary(var_h1)
+summary(scale_model_test_precentered)
+#looks like we might have already been centering by default?
+
+```
