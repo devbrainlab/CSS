@@ -1132,10 +1132,6 @@ Standardize Data for within-participant analyses
 #standardize specific columns
 standardized_analysis_data <- data.frame(analysis_data)
 
-#grand-mean centering (I think)
-standardized_analysis_data[c(12:26)] <- lapply(standardized_analysis_data[c(12:26)], 
-                             function(x) c(scale(x, center=TRUE, scale=TRUE)))
-describe(standardized_analysis_data)
 
 # Grand Mean, Within-Person Mean, Between-Person mean
 standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id) %>% 
@@ -1145,6 +1141,7 @@ standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id)
     final_social_prop_mean2 = mean(final_social_prop, na.rm = T),
     final_total_min_mean2 = mean(final_total_min, na.rm = T),
     final_social_min_mean2 = mean(final_social_min, na.rm = T),
+    prop_friend_stability_mean2 = mean(final_social_min, na.rm = T)
 
   ) %>% ungroup() %>% 
   mutate(
@@ -1153,6 +1150,7 @@ standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id)
     final_social_prop_c2 = scale(final_social_prop, center = T, scale = F),
     final_total_min_c2 = scale(final_total_min, center = T, scale = F),
     final_social_min_c2 = scale(final_social_min, center = T, scale = F),
+    prop_friend_stability_c2 = scale(prop_friend_stability, center = T, scale = F),
     
     
     yam_total_cw2 = yam_total - yam_total_mean2,
@@ -1160,26 +1158,18 @@ standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id)
     final_social_prop_cw2 = final_social_prop - final_social_prop_mean2,
     final_total_min_cw2 = final_total_min - final_total_min_mean2,
     final_social_min_cw2 = final_social_min - final_social_min_mean2,
+    prop_friend_stability_cw2 = prop_friend_stability - prop_friend_stability_mean2,
 
     yam_total_cb2 = yam_total_c2 - yam_total_cw2,
     mspss_total_cb2 = mspss_total_c2 - mspss_total_cw2,
     final_social_prop_cb2 = final_social_prop_c2 - final_social_prop_cw2,
     final_total_min_cb2 = final_total_min_c2 - final_total_min_cw2,
-    final_social_min_cb2 = final_social_min_c2 - final_social_min_cw2
+    final_social_min_cb2 = final_social_min_c2 - final_social_min_cw2,
+    prop_friend_stability_cb2 = prop_friend_stability_c2 - prop_friend_stability_cw2
   )
-
-
-#######Use this
-#Center within-participant
-#mutate at columns & create new columns with _scaled at end
-standardized_analysis_data <- standardized_analysis_data %>% 
-  group_by(record_id) %>%
-  mutate_at(.vars = colnames(standardized_analysis_data)[12:29], 
-            .funs = list("scaled" = scale(.,na.rm=TRUE))) %>%   #find out how to add na.rm=TRUE, maybe? seems to not be an issue so far
-  ungroup()
 ```
 
-Data Viz for centered data
+Data Viz for within-person centered data
 ```{r}
 #Centered anxiety across waves (by participant)
 qplot(x=wave, y=yam_total_cw2, colour = factor(record_id),
@@ -1191,23 +1181,64 @@ qplot(x=wave, y=mspss_total_cw2, colour = factor(record_id),
 data = standardized_analysis_data, geom = "line", main= "Social Support (Within-Participants)",xlab="Wave", ylab="Centered MSPSS Score")  + theme(legend.position="none")
 ggsave("CenteredSocialSupportParticipants.png")
 
-#Center social use proportion
+#Centered social use proportion
 qplot(x=wave, y=final_social_prop_cw2, colour = factor(record_id),
 data = standardized_analysis_data, geom = "line", main= "Social Proportion (Within-Participants)",xlab="Wave", ylab="Centered Social Proportion")  + theme(legend.position="none")
 ggsave("CenteredSocialProportionParticipants.png")
 
-#Center total min 
+#Centered total min 
 qplot(x=wave, y=final_total_min_cw2, colour = factor(record_id),
 data = standardized_analysis_data, geom = "line", main= "Total Use (Within-Participants)",xlab="Wave", ylab="Centered Total Use")  + theme(legend.position="none")
 ggsave("CenteredTotalMinParticipants.png")
 
-#Center social min 
+#Centered social min 
 qplot(x=wave, y=final_social_min_cw2, colour = factor(record_id),
 data = standardized_analysis_data, geom = "line", main= "Social Use Min (Within-Participants)",xlab="Wave", ylab="Centered Social Use")  + theme(legend.position="none")
 ggsave("CenteredSocialMinParticipants.png")
 
+#Centered friend stability
+#ending up as straight lines, values don't make sense
+qplot(x=wave, y=prop_friend_stability_cw2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Friend Stability (Within-Participants)",xlab="Wave", ylab="Centered Friend Stability")  + theme(legend.position="none")
+ggsave("CenteredFriendStabilityParticipants.png")
+
 ```
 
+Data viz for between-person centered data
+```{r}
+#Centered anxiety across waves (by participant)
+qplot(x=wave, y=yam_total_cb2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Anxiety (Between-Participants)",xlab="Wave", ylab="Centered YAM Score")  + theme(legend.position="none")
+#ggsave("CenteredAnxietyParticipants.png")
+
+#Centered social support across waves (by participant)
+qplot(x=wave, y=mspss_total_cb2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Social Support (Between-Participants)",xlab="Wave", ylab="Centered MSPSS Score")  + theme(legend.position="none")
+#ggsave("CenteredSocialSupportParticipants.png")
+
+#Centered social use proportion
+qplot(x=wave, y=final_social_prop_cb2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Social Proportion (Between-Participants)",xlab="Wave", ylab="Centered Social Proportion")  + theme(legend.position="none")
+#ggsave("CenteredSocialProportionParticipants.png")
+
+#Centered total min 
+qplot(x=wave, y=final_total_min_cb2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Total Use (Between-Participants)",xlab="Wave", ylab="Centered Total Use")  + theme(legend.position="none")
+#ggsave("CenteredTotalMinParticipants.png")
+
+#Centered social min 
+qplot(x=wave, y=final_social_min_cb2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Social Use Min (Between-Participants)",xlab="Wave", ylab="Centered Social Use")  + theme(legend.position="none")
+#ggsave("CenteredSocialMinParticipants.png")
+
+#Centered friend stability
+#ending up as straight lines, values don't make sense
+qplot(x=wave, y=prop_friend_stability_cb2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Friend Stability (Between-Participants)",xlab="Wave", ylab="Centered Friend Stability")  + theme(legend.position="none")
+#ggsave("CenteredFriendStabilityParticipants.png")
+
+
+```
 Models accounting for within-person variation
 ```{r}
 
