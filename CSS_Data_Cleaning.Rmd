@@ -1140,18 +1140,32 @@ describe(standardized_analysis_data)
 # Grand Mean, Within-Person Mean, Between-Person mean
 standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id) %>% 
   mutate(
-    fwkstrs_mean2 = mean(fwkstrs, na.rm = T),
-    fwkdis_mean2 = mean(fwkdis, na.rm = T)
+    yam_total_mean2 = mean(yam_total, na.rm = T),
+    mspss_total_mean2 = mean(mspss_total, na.rm = T),
+    final_social_prop_mean2 = mean(final_social_prop, na.rm = T),
+    final_total_min_mean2 = mean(final_total_min, na.rm = T),
+    final_social_min_mean2 = mean(final_social_min, na.rm = T),
+
   ) %>% ungroup() %>% 
   mutate(
-    fwkstrs_c2 = scale(fwkstrs, center = T, scale = F),
-    fwkdis_c2 = scale(fwkdis, center = T, scale = F),
+    yam_total_c2 = scale(yam_total, center = T, scale = F),
+    mspss_total_c2 = scale(mspss_total, center = T, scale = F),
+    final_social_prop_c2 = scale(final_social_prop, center = T, scale = F),
+    final_total_min_c2 = scale(final_total_min, center = T, scale = F),
+    final_social_min_c2 = scale(final_social_min, center = T, scale = F),
     
-    fwkstrs_cw2 = fwkstrs - fwkstrs_mean2,
-    fwkdis_cw2 = fwkdis - fwkdis_mean2,
+    
+    yam_total_cw2 = yam_total - yam_total_mean2,
+    mspss_total_cw2 = mspss_total - mspss_total_mean2,
+    final_social_prop_cw2 = final_social_prop - final_social_prop_mean2,
+    final_total_min_cw2 = final_total_min - final_total_min_mean2,
+    final_social_min_cw2 = final_social_min - final_social_min_mean2,
 
-    fwkstrs_cb2 = fwkstrs_c2 - fwkstrs_cw2,
-    fwkdis_cb2 = fwkdis_c2 - fwkdis_cw2
+    yam_total_cb2 = yam_total_c2 - yam_total_cw2,
+    mspss_total_cb2 = mspss_total_c2 - mspss_total_cw2,
+    final_social_prop_cb2 = final_social_prop_c2 - final_social_prop_cw2,
+    final_total_min_cb2 = final_total_min_c2 - final_total_min_cw2,
+    final_social_min_cb2 = final_social_min_c2 - final_social_min_cw2
   )
 
 
@@ -1163,6 +1177,35 @@ standardized_analysis_data <- standardized_analysis_data %>%
   mutate_at(.vars = colnames(standardized_analysis_data)[12:29], 
             .funs = list("scaled" = scale(.,na.rm=TRUE))) %>%   #find out how to add na.rm=TRUE, maybe? seems to not be an issue so far
   ungroup()
+```
+
+Data Viz for centered data
+```{r}
+#Centered anxiety across waves (by participant)
+qplot(x=wave, y=yam_total_cw2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Anxiety (Within-Participants)",xlab="Wave", ylab="Centered YAM Score")  + theme(legend.position="none")
+ggsave("CenteredAnxietyParticipants.png")
+
+#Centered social support across waves (by participant)
+qplot(x=wave, y=mspss_total_cw2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Social Support (Within-Participants)",xlab="Wave", ylab="Centered MSPSS Score")  + theme(legend.position="none")
+ggsave("CenteredSocialSupportParticipants.png")
+
+#Center social use proportion
+qplot(x=wave, y=final_social_prop_cw2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Social Proportion (Within-Participants)",xlab="Wave", ylab="Centered Social Proportion")  + theme(legend.position="none")
+ggsave("CenteredSocialProportionParticipants.png")
+
+#Center total min 
+qplot(x=wave, y=final_total_min_cw2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Total Use (Within-Participants)",xlab="Wave", ylab="Centered Total Use")  + theme(legend.position="none")
+ggsave("CenteredTotalMinParticipants.png")
+
+#Center social min 
+qplot(x=wave, y=final_social_min_cw2, colour = factor(record_id),
+data = standardized_analysis_data, geom = "line", main= "Social Use Min (Within-Participants)",xlab="Wave", ylab="Centered Social Use")  + theme(legend.position="none")
+ggsave("CenteredSocialMinParticipants.png")
+
 ```
 
 Models accounting for within-person variation
