@@ -529,19 +529,17 @@ save(netcanvas_cleaned, file="netcanvas_cleaned.Rda")
 
 processed_data <- left_join(data_copy, netcanvas_cleaned)
 processed_data <- processed_data %>%
-  select(-c(names, category, app)) %>%
-  filter(Finished == "True")
+  select(-c(names, category, app))# %>%
+  #filter(Finished == "True")
 
-#Manually fix values for record ids
-  processed_data[275,1]= 37
-  processed_data[276,1]= 41
-  processed_data[277,1]= 37
-  processed_data[278,1]= 49
-  processed_data[279,1]= 49
-  processed_data[280,1]= 3
-  processed_data[281,1]= 37
-  processed_data[282,1]= 38
-  processed_data[284,1]= 41
+#Manually fix values for record ids & age in years
+  processed_data[65,1]=38
+  processed_data[73,1]=37
+  processed_data[74,1]=37
+  processed_data[49,7]=12
+  processed_data[60,7]=10
+  processed_data[79,7]=13
+    
   
   processed_data <- processed_data %>%
     filter(!is.na(record_id)) 
