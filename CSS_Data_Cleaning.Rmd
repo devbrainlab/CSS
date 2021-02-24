@@ -533,12 +533,20 @@ processed_data <- processed_data %>%
   #filter(Finished == "True")
 
 #Manually fix values for record ids & age in years
+#1=record_id, 7=years, 8=months
+  processed_data[10,7]=11
+  processed_data[44,7]=11
   processed_data[65,1]=38
   processed_data[73,1]=37
   processed_data[74,1]=37
   processed_data[49,7]=12
   processed_data[60,7]=10
   processed_data[79,7]=13
+  processed_data[151,7]=11
+  processed_data[151,8]=10
+  processed_data[169,7]=10
+  processed_data[227,8]=9
+  processed_data[282,7]=13
     
   
   processed_data <- processed_data %>%
@@ -969,7 +977,7 @@ var_h1 <- mlVAR(analysis_data,
                 "record_id",
                 estimator="lmer",
                 lags = 1,
-                temporal = "fixed")
+                temporal = "fixed", scale=T, scaleWithin=F)
 summary(var_h1)
 plot(var_h1, "fixed", title = "Estimated temporal relationships", layout = "circle")
 
@@ -1243,9 +1251,12 @@ Models accounting for within-person variation
 scale_model_test <- mlVAR(
   analysis_data, c("yam_total", "final_total_min"), "record_id", lags=1, estimator="lmer", temporal="fixed", scale=TRUE, scaleWithin = FALSE
 )
+scale_model_test_no_center <- mlVAR(
+  analysis_data, c("yam_total", "final_total_min"), "record_id", lags=1, estimator="lmer", temporal="fixed", scale=FALSE
+)
 
 scale_model_test_precentered <- mlVAR(
-  standardized_analysis_data, c("yam_total_scaled", "final_total_min_scaled"), "record_id", lags=1, estimator="lmer", temporal="fixed", scale=FALSE
+  standardized_analysis_data, c("yam_total_cw2", "final_total_min_cw2"), "record_id", lags=1, estimator="lmer", temporal="fixed", scale=FALSE
 )
 
 summary(scale_model_test)
