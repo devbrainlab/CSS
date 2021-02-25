@@ -165,11 +165,6 @@ data_copy <- data_copy %>% mutate(yam_general = rowSums(.[c("yam_4", "yam_8", "y
 data_copy <- data_copy %>% mutate(yam_na = rowSums(is.na(.[grep("yam", names(.))]), na.rm = T))
 #if >=5 items left blank, exclude
 
-yam_exclusion_indices <- which(data_copy$yam_na >= 5)  #indices of participants excluded for >= 5 NAs
-yam_exclusion_ids <- data_copy$ResponseID[yam_exclusion_indices] #ids of excluded participants
-
-#If needed for an analysis, exclude participants
-#yam_analysis <- subset(data_copy, (!(ResponseID %in% yam_exclusion_ids)))
 
 #Recode MSPSS
 data_copy <- data_copy %>%
@@ -192,11 +187,6 @@ data_copy <- data_copy %>% mutate(mspss_friends = rowSums(.[c("mspss_6", "mspss_
 data_copy <- data_copy %>% mutate(mspss_na = rowSums(is.na(.[grep("mspss", names(.))]), na.rm = T))
 #If >= 3 items left blank, exclude
 
-mspss_exclusion_indices <- which(data_copy$mspss_na >= 3)  #indices of participants excluded for >- 3 NAs
-mspss_exclusion_ids <- data_copy$ResponseID[mspss_exclusion_indices] #ids of excluded participants
-
-#If needed for an analysis, exclude participants
-#mspss_analysis <- subset(data_copy, (!(ResponseID %in% mspss_exclusion_ids)))
 ```
 
 Data Viz for YAM & MSPSS
@@ -943,7 +933,6 @@ summary(fit) # show results
 
 ```
 
-
 Actual Models (Between-Participant)
 ```{r}
 # We hypothesize that use of screen media, in particular screen media used for social engagement, provides a vital way for adolescents to connect with their friends and peers during periods of increased social isolation, such as the COVID-19 pandemic. Specifically, we think that elevated socially-focused screen media use may be related to a number of markers of well-being. We expect that anxiety will be lower and perceived social support will be higher in individuals with higher socially-focused screen media use. We also expect that individuals with more stable social ties have higher levels of socially-focused screen media use. 
@@ -1132,7 +1121,6 @@ plot(var_h4, "contemporaneous", title = "Estimated contemporaneous relationships
 
 ```
 
-
 Standardize Data for within-participant analyses
 ```{r}
 #standardize specific columns
@@ -1173,6 +1161,22 @@ standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id)
     final_social_min_cb2 = final_social_min_c2 - final_social_min_cw2,
     prop_friend_stability_cb2 = prop_friend_stability_c2 - prop_friend_stability_cw2
   )
+```
+
+Subset Data for analyses 
+```{r}
+yam_exclusion_indices <- which(standardized_analysis_data$yam_na >= 5)  #indices of participants excluded for >= 5 NAs
+yam_exclusion_ids <- standardized_analysis_data$ResponseId[yam_exclusion_indices] #ids of excluded participants
+
+#If needed for an analysis, exclude participants
+yam_analysis <- subset(standardized_analysis_data, (!(ResponseId %in% yam_exclusion_ids)))
+
+mspss_exclusion_indices <- which(standardized_analysis_data$mspss_na >= 3)  #indices of participants excluded for >- 3 NAs
+mspss_exclusion_ids <- standardized_analysis_data$ResponseId[mspss_exclusion_indices] #ids of excluded participants
+
+#If needed for an analysis, exclude participants
+mspss_analysis <- subset(standardized_analysis_data, (!(ResponseId %in% mspss_exclusion_ids)))
+
 ```
 
 Data Viz for within-person centered data
@@ -1265,3 +1269,5 @@ summary(scale_model_test_precentered)
 #looks like we might have already been centering by default?
 
 ```
+
+
