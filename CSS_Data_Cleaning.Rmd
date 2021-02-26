@@ -20,7 +20,7 @@ packages <-  c("tidyverse",
                "parallel","lubridate",
                "mgcv", "ggpubr", "broom", 
                "table1", "apaTables", "readxl", "ggalluvial",
-               "mlVAR", "pompom")
+               "mlVAR", "pompom", "tvem")
 if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
   install.packages(setdiff(packages, rownames(installed.packages())))  
 }
@@ -939,26 +939,37 @@ Actual Models (Between-Participant)
 
 # H1: yam_total ~ final_total_min compared to yam_total ~ final_total_min + final_social_min NEATER ALTERNATIVE: yam_total ~ final_social_prop 
 
-mod_h1 <- lme(yam_total ~ final_total_min,
+mod_h1 <- lme(yam_total_cw2 ~ final_total_min_cw2,
               random = ~1|record_id,
-              data=(analysis_data %>% filter(!is.na(final_social_min))),
+              data=(yam_analysis %>% filter(!is.na(final_social_min_cw2))),
               method="ML",
               na.action=na.omit)
+mod_h1_lmer <- lmer(yam_total_cw2 ~ final_total_min_cw2 + (1|record_id),
+                    data=(yam_analysis %>% filter(!is.na(final_social_min_cw2))),
+              na.action=na.omit)
 
-mod_h1_soc <- lme(yam_total ~ final_total_min + final_social_min,
+mod_h1_slope <- lme(yam_total_cw2 ~ final_total_min_cw2,
+              random = ~1 + final_total_min_cw2|record_id, 
+              data=(yam_analysis %>% filter(!is.na(final_social_min_cw2))),
+              method="ML",
+              na.action=na.omit)
+anova(mod_h1,mod_h1_slope)
+
+mod_h1_soc <- lme(yam_total_cw2 ~ final_total_min_cw2 + final_social_min_cw2,
                   random = ~1|record_id,
-                  data=(analysis_data %>% filter(!is.na(final_social_min))),
+                  data=(yam_analysis %>% filter(!is.na(final_social_min_cw2))),
                   method="ML",
                   na.action=na.omit)
 
 anova(mod_h1,mod_h1_soc)
 
 # now look at the proportional method, prob gonna see the same thing
-mod_h1_prop <- lme(yam_total ~ final_social_prop,
+mod_h1_prop <- lme(yam_total_cw2 ~ final_social_prop_cw2,
               random = ~1|record_id,
-              data=analysis_data,
+              data=yam_analysis,
               method="ML",
               na.action=na.omit)
+
 
 # Now let's try the VAR approach for lagged relationships
 var_h1 <- mlVAR(analysis_data,
@@ -990,24 +1001,24 @@ plot(var_h1_prop, "contemporaneous", title = "Estimated contemporaneous relation
 
 # H2: mspss_total ~ final_total_min compared to mspss_total ~ final_total_min + final_social_min
 
-mod_h2 <- lme(mspss_total ~ final_total_min,
+mod_h2 <- lme(mspss_total_cw2 ~ final_total_min_cw2,
               random = ~1|record_id,
-              data=(analysis_data %>% filter(!is.na(final_social_min))),
+              data=(mspss_analysis %>% filter(!is.na(final_social_min))),
               method="ML",
               na.action=na.omit)
 
-mod_h2_soc <- lme(mspss_total ~ final_total_min + final_social_min,
+mod_h2_soc <- lme(mspss_total_cw2 ~ final_total_min_cw2 + final_social_min_cw2,
                   random = ~1|record_id,
-                  data=(analysis_data %>% filter(!is.na(final_social_min))),
+                  data=(mspss_analysis %>% filter(!is.na(final_social_min))),
                   method="ML",
                   na.action=na.omit)
 
 anova(mod_h2,mod_h2_soc)
 
 #proportional method
-mod_h2_prop <- lme(mspss_total ~ final_social_prop,
+mod_h2_prop <- lme(mspss_total_cw2 ~ final_social_prop_cw2,
               random = ~1|record_id,
-              data=analysis_data,
+              data=mspss_analysis,
               method="ML",
               na.action=na.omit)
 
@@ -1120,6 +1131,72 @@ plot(var_h4, "contemporaneous", title = "Estimated contemporaneous relationships
 
 
 ```
+Model Visualization
+```{r}
+total_minutes<-round(seq(min(yam_analysis$final_total_min_cw2,na.rm = TRUE),
+                                    max(yam_analysis$final_total_min_cw2,na.rm = TRUE),by=400),2)
+                 data.pred = data.frame(final_total_min_cw2=total_minutes)
+                 y.pred = predict(mod_h1,
+                     newdata=data.pred,se=T,level = 0)
+                 data.pred = cbind.data.frame(data.pred,
+                                              y.pred)
+                 scale = 1.96
+                 #alternate option
+                 scale = 1.96
+                  designmat<-model.matrix(eval(eval(mod_h1$call$fixed)[-2]),
+                        data.pred[-3]) #make design matrix
+                  SDvalue<-sqrt(diag(designmat %*% mod_h1$varFix %*% t(designmat))) #calculate standard deviation for each point for each model
+                  y.lower<-y.pred-(scale*SDvalue) #calculate confidence intervals - lower
+                  y.upper<-y.pred+(scale*SDvalue) #calculate confidence intervals - upper
+                  data.pred = cbind.data.frame(data.pred,
+                             y.lower,
+                             y.upper)
+                data.pred$ypred<-data.pred$y.pred
+                 #end alternate option
+                 y.upper = y.pred$fit + (scale*y.pred$se.fit)
+                 y.lower = y.pred$fit - (scale*y.pred$se.fit)
+                 change<-data.pred$fit
+                 assign(paste0("pred_",meas),cbind.data.frame(data.pred, #remove assign/paste0
+                                              y.lower,
+                                              y.upper,
+                                              change))
+                 rm(avgage,data.pred,y.pred,y.upper,y.lower)
+                 #assign(paste0("abslinedplot_",meas),
+                        ggplot(data=NULL#,
+                               #aes(x=final_total_min_cw2,
+                                  # y=yam_total_cw2)
+                        )+
+                          ylab("Predicted value")+
+                          xlab("Wave")+
+                          ggtitle("Model H1")+
+                          geom_line(data=yam_analysis, #raw data
+                                    aes(x=wave, y=final_total_min_cw2,group=record_id,
+                                        colour=record_id),
+                                    alpha=0.4,
+                                    size=.6) +
+                          geom_point(data=yam_analysis,
+                                     aes(x=wave, y=final_total_min_cw2,group=record_id,colour=record_id),
+                                     size=1.5,
+                                     alpha=0.5) +
+                          geom_line(data=data.pred, #predicted data
+                                    aes(x=final_total_min_cw2, y=y.pred), #y.pred as x?
+                                    size=1,
+                                    colour="purple2")+
+                          geom_ribbon(data=data.pred, #predicted data
+                                      aes(ymin=y.lower,
+                                          ymax=y.upper),
+                                      alpha=0.4,
+                                      fill="purple2")+
+                          theme_kate()
+
+                   ggsave(filename=paste0("abslinedplot_",meas,".png"),
+                          plot=get(paste0("abslinedplot_",meas)), 
+                          width=6, height=4, units='in', dpi=300)
+
+                   
+                   
+```
+
 
 Standardize Data for within-participant analyses
 ```{r}
@@ -1171,11 +1248,17 @@ yam_exclusion_ids <- standardized_analysis_data$ResponseId[yam_exclusion_indices
 #If needed for an analysis, exclude participants
 yam_analysis <- subset(standardized_analysis_data, (!(ResponseId %in% yam_exclusion_ids)))
 
+yam_analysis <- standardized_analysis_data %>%
+  filter(!yam_na>=5)
+
 mspss_exclusion_indices <- which(standardized_analysis_data$mspss_na >= 3)  #indices of participants excluded for >- 3 NAs
 mspss_exclusion_ids <- standardized_analysis_data$ResponseId[mspss_exclusion_indices] #ids of excluded participants
 
 #If needed for an analysis, exclude participants
 mspss_analysis <- subset(standardized_analysis_data, (!(ResponseId %in% mspss_exclusion_ids)))
+
+mspss_analysis<-standardized_analysis_data %>%
+  filter(!mspss_na>=3)
 
 ```
 
@@ -1271,3 +1354,8 @@ summary(scale_model_test_precentered)
 ```
 
 
+Models
+```{r}
+
+
+```
