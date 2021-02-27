@@ -20,7 +20,7 @@ packages <-  c("tidyverse",
                "parallel","lubridate",
                "mgcv", "ggpubr", "broom", 
                "table1", "apaTables", "readxl", "ggalluvial",
-               "mlVAR", "pompom", "tvem")
+               "mlVAR", "pompom", "tvem", "ggthemr")
 if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
   install.packages(setdiff(packages, rownames(installed.packages())))  
 }
@@ -1166,16 +1166,16 @@ total_minutes<-round(seq(min(yam_analysis$final_total_min_cw2,na.rm = TRUE),
                                #aes(x=final_total_min_cw2,
                                   # y=yam_total_cw2)
                         )+
-                          ylab("Predicted value")+
-                          xlab("Wave")+
+                          ylab("Predicted Anxiety")+
+                          xlab("Total Screen Use")+
                           ggtitle("Model H1")+
-                          geom_line(data=yam_analysis, #raw data
-                                    aes(x=wave, y=final_total_min_cw2,group=record_id,
-                                        colour=record_id),
-                                    alpha=0.4,
-                                    size=.6) +
+                          #geom_line(data=yam_analysis, #raw data
+                             #       aes(x=final_total_min_cw2, y=yam_total_cw2,group=record_id,
+                               #         colour=record_id),
+                                #    alpha=0.4,
+                                #    size=.6) +
                           geom_point(data=yam_analysis,
-                                     aes(x=wave, y=final_total_min_cw2,group=record_id,colour=record_id),
+                                     aes(x=final_total_min_cw2, y=yam_total_cw2,group=record_id,colour=wave),
                                      size=1.5,
                                      alpha=0.5) +
                           geom_line(data=data.pred, #predicted data
@@ -1183,14 +1183,13 @@ total_minutes<-round(seq(min(yam_analysis$final_total_min_cw2,na.rm = TRUE),
                                     size=1,
                                     colour="purple2")+
                           geom_ribbon(data=data.pred, #predicted data
-                                      aes(ymin=y.lower,
+                                      aes(x=final_total_min_cw2, y=y.pred,ymin=y.lower,
                                           ymax=y.upper),
                                       alpha=0.4,
                                       fill="purple2")+
                           theme_kate()
 
-                   ggsave(filename=paste0("abslinedplot_",meas,".png"),
-                          plot=get(paste0("abslinedplot_",meas)), 
+                   ggsave(filename="ModH1.png",
                           width=6, height=4, units='in', dpi=300)
 
                    
