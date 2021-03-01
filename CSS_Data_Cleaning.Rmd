@@ -1133,6 +1133,8 @@ plot(var_h4, "contemporaneous", title = "Estimated contemporaneous relationships
 ```
 Model Visualization
 ```{r}
+
+#Model H1
 total_minutes<-round(seq(min(yam_analysis$final_total_min_cw2,na.rm = TRUE),
                                     max(yam_analysis$final_total_min_cw2,na.rm = TRUE),by=400),2)
                  data.pred = data.frame(final_total_min_cw2=total_minutes)
@@ -1191,6 +1193,73 @@ total_minutes<-round(seq(min(yam_analysis$final_total_min_cw2,na.rm = TRUE),
 
                    ggsave(filename="ModH1.png",
                           width=6, height=4, units='in', dpi=300)
+                   
+                   
+                   
+                   
+#Model H2
+                   
+    total_minutes_mspss<-round(seq(min(mspss_analysis$final_total_min_cw2,na.rm = TRUE),
+                                    max(mspss_analysis$final_total_min_cw2,na.rm = TRUE),by=400),2)
+                 data.pred = data.frame(final_total_min_cw2=total_minutes_mspss)
+                 y.pred = predict(mod_h2,
+                     newdata=data.pred,se=T,level = 0)
+                 data.pred = cbind.data.frame(data.pred,
+                                              y.pred)
+                 scale = 1.96
+                 #alternate option
+                 scale = 1.96
+                  designmat<-model.matrix(eval(eval(mod_h2$call$fixed)[-2]),
+                        data.pred[-3]) #make design matrix
+                  SDvalue<-sqrt(diag(designmat %*% mod_h2$varFix %*% t(designmat))) #calculate standard deviation for each point for each model
+                  y.lower<-y.pred-(scale*SDvalue) #calculate confidence intervals - lower
+                  y.upper<-y.pred+(scale*SDvalue) #calculate confidence intervals - upper
+                  data.pred = cbind.data.frame(data.pred,
+                             y.lower,
+                             y.upper)
+                data.pred$ypred<-data.pred$y.pred
+                 #end alternate option
+                 y.upper = y.pred$fit + (scale*y.pred$se.fit)
+                 y.lower = y.pred$fit - (scale*y.pred$se.fit)
+                 change<-data.pred$fit
+                 assign(paste0("pred_",meas),cbind.data.frame(data.pred, #remove assign/paste0
+                                              y.lower,
+                                              y.upper,
+                                              change))
+                 rm(avgage,data.pred,y.pred,y.upper,y.lower)
+                 #assign(paste0("abslinedplot_",meas),
+                        ggplot(data=NULL#,
+                               #aes(x=final_total_min_cw2,
+                                  # y=yam_total_cw2)
+                        )+
+                          ylab("Predicted Social Support")+
+                          xlab("Total Screen Use")+
+                          ggtitle("Model H2")+
+                          #geom_line(data=yam_analysis, #raw data
+                             #       aes(x=final_total_min_cw2, y=yam_total_cw2,group=record_id,
+                               #         colour=record_id),
+                                #    alpha=0.4,
+                                #    size=.6) +
+                          geom_point(data=mspss_analysis,
+                                     aes(x=final_total_min_cw2, y=mspsss_total_cw2,group=record_id,colour=wave),
+                                     size=1.5,
+                                     alpha=0.5) +
+                          geom_line(data=data.pred, #predicted data
+                                    aes(x=final_total_min_cw2, y=y.pred), #y.pred as x?
+                                    size=1,
+                                    colour="purple2")+
+                          geom_ribbon(data=data.pred, #predicted data
+                                      aes(x=final_total_min_cw2, y=y.pred,ymin=y.lower,
+                                          ymax=y.upper),
+                                      alpha=0.4,
+                                      fill="purple2")+
+                          theme_kate()
+
+                   ggsave(filename="ModH2.png",
+                          width=6, height=4, units='in', dpi=300)
+                   
+                   
+                   
 
                    
                    
