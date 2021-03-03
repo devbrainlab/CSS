@@ -20,7 +20,7 @@ packages <-  c("tidyverse",
                "parallel","lubridate",
                "mgcv", "ggpubr", "broom", 
                "table1", "apaTables", "readxl", "ggalluvial",
-               "mlVAR", "pompom", "tvem", "ggthemr")
+               "mlVAR")
 if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
   install.packages(setdiff(packages, rownames(installed.packages())))  
 }
@@ -944,6 +944,13 @@ mod_h1 <- lme(yam_total_cw2 ~ final_total_min_cw2,
               data=(yam_analysis %>% filter(!is.na(final_social_min_cw2))),
               method="ML",
               na.action=na.omit)
+
+mod_h1_between <- lme(yam_total ~ final_total_min,
+              random = ~1|record_id,
+              data=(yam_analysis %>% filter(!is.na(final_social_min))),
+              method="ML",
+              na.action=na.omit)
+
 mod_h1_lmer <- lmer(yam_total_cw2 ~ final_total_min_cw2 + (1|record_id),
                     data=(yam_analysis %>% filter(!is.na(final_social_min_cw2))),
               na.action=na.omit)
@@ -1003,6 +1010,12 @@ plot(var_h1_prop, "contemporaneous", title = "Estimated contemporaneous relation
 
 mod_h2 <- lme(mspss_total_cw2 ~ final_total_min_cw2,
               random = ~1|record_id,
+              data=(mspss_analysis %>% filter(!is.na(final_social_min_cw2))),
+              method="ML",
+              na.action=na.omit)
+
+mod_h2_between <- lme(mspss_total ~ final_total_min,
+              random = ~1|record_id,
               data=(mspss_analysis %>% filter(!is.na(final_social_min))),
               method="ML",
               na.action=na.omit)
@@ -1061,23 +1074,49 @@ plot(var_h2_social, "contemporaneous", title = "Estimated contemporaneous relati
     layout = "circle")
 
 #H3: final_social_prop ~ prop_friend_stability
-mod_h3_tot <- lme(final_total_min ~ prop_friend_stability,
+mod_h3_tot <- lme(final_social_min_cw2 ~ final_total_min_cw2,
+              random = ~1|record_id,
+              data=filter(standardized_analysis_data, !is.na(prop_friend_stability_cw2)),
+              method="ML",
+              na.action=na.omit)
+
+mod_h3_both <- lme(final_social_min_cw2 ~ final_total_min_cw2 + prop_friend_stability_cw2,
+              random = ~1|record_id,
+              data=standardized_analysis_data,
+              method="ML",
+              na.action=na.omit)
+anova(mod_h3_tot,mod_h3_both)
+
+
+mod_h3_prop <- lme(final_social_prop_cw2 ~ prop_friend_stability_cw2,
+              random = ~1|record_id,
+              data=standardized_analysis_data,
+              method="ML",
+              na.action=na.omit)
+
+#Between Subjects
+
+mod_h3_tot_between <- lme(final_social_min ~ final_total_min,
+              random = ~1|record_id,
+              data=filter(analysis_data, !is.na(prop_friend_stability)),
+              method="ML",
+              na.action=na.omit)
+
+mod_h3_both_between <- lme(final_social_min ~ final_total_min + prop_friend_stability,
+              random = ~1|record_id,
+              data=analysis_data,
+              method="ML",
+              na.action=na.omit)
+anova(mod_h3_tot_between,mod_h3_both_between)
+
+mod_h3_prop_between <- lme(final_social_prop ~ prop_friend_stability,
               random = ~1|record_id,
               data=analysis_data,
               method="ML",
               na.action=na.omit)
 
-mod_h3 <- lme(final_social_min ~ prop_friend_stability,
-              random = ~1|record_id,
-              data=analysis_data,
-              method="ML",
-              na.action=na.omit)
 
-mod_h3_prop <- lme(final_social_prop ~ prop_friend_stability,
-              random = ~1|record_id,
-              data=analysis_data,
-              method="ML",
-              na.action=na.omit)
+
 
 
 var_h3 <- mlVAR(analysis_data,
@@ -1134,7 +1173,7 @@ plot(var_h4, "contemporaneous", title = "Estimated contemporaneous relationships
 Model Visualization
 ```{r}
 
-#Model H1
+#Model H1 (Within)
 total_minutes<-round(seq(min(yam_analysis$final_total_min_cw2,na.rm = TRUE),
                                     max(yam_analysis$final_total_min_cw2,na.rm = TRUE),by=400),2)
                  data.pred = data.frame(final_total_min_cw2=total_minutes)
@@ -1195,18 +1234,122 @@ total_minutes<-round(seq(min(yam_analysis$final_total_min_cw2,na.rm = TRUE),
                           width=6, height=4, units='in', dpi=300)
                    
                    
-                   
-                   
-#Model H2
-                   
-    total_minutes_mspss<-round(seq(min(mspss_analysis$final_total_min_cw2,na.rm = TRUE),
-                                    max(mspss_analysis$final_total_min_cw2,na.rm = TRUE),by=400),2)
-                 data.pred = data.frame(final_total_min_cw2=total_minutes_mspss)
-                 y.pred = predict(mod_h2,
+#Model H1 (Between)
+total_minutes_between<-round(seq(min(yam_analysis$final_total_min,na.rm = TRUE),
+                                    max(yam_analysis$final_total_min,na.rm = TRUE),by=500),2)
+                 data.pred = data.frame(final_total_min=total_minutes_between)
+                 y.pred = predict(mod_h1_between,
                      newdata=data.pred,se=T,level = 0)
                  data.pred = cbind.data.frame(data.pred,
                                               y.pred)
                  scale = 1.96
+                 #alternate option
+                 scale = 1.96
+                  designmat<-model.matrix(eval(eval(mod_h1_between$call$fixed)[-2]),
+                        data.pred[-3]) #make design matrix
+                  SDvalue<-sqrt(diag(designmat %*% mod_h1_between$varFix %*% t(designmat))) #calculate standard deviation for each point for each model
+                  y.lower<-y.pred-(scale*SDvalue) #calculate confidence intervals - lower
+                  y.upper<-y.pred+(scale*SDvalue) #calculate confidence intervals - upper
+                  data.pred = cbind.data.frame(data.pred,
+                             y.lower,
+                             y.upper)
+                data.pred$ypred<-data.pred$y.pred
+                 #end alternate option
+                 #y.upper = y.pred$fit + (scale*y.pred$se.fit)
+                 #y.lower = y.pred$fit - (scale*y.pred$se.fit)
+                # change<-data.pred$fit
+                 #assign(paste0("pred_",meas),cbind.data.frame(data.pred, #remove assign/paste0
+                                      #        y.lower,
+                                      #        y.upper,
+                                      #        change))
+               #  rm(avgage,data.pred,y.pred,y.upper,y.lower)
+                 #assign(paste0("abslinedplot_",meas),
+                        ggplot(data=NULL#,
+                               #aes(x=final_total_min_cw2,
+                                  # y=yam_total_cw2)
+                        )+
+                          ylab("Predicted Anxiety")+
+                          xlab("Total Screen Use")+
+                          ggtitle("Model H1 (Between)")+
+                          #geom_line(data=yam_analysis, #raw data
+                             #       aes(x=final_total_min_cw2, y=yam_total_cw2,group=record_id,
+                               #         colour=record_id),
+                                #    alpha=0.4,
+                                #    size=.6) +
+                          geom_point(data=yam_analysis,
+                                     aes(x=final_total_min, y=yam_total,group=record_id,colour=wave),
+                                     size=1.5,
+                                     alpha=0.5) +
+                          geom_line(data=data.pred, #predicted data
+                                    aes(x=final_total_min, y=y.pred), #y.pred as x?
+                                    size=1,
+                                    colour="purple2")+
+                          geom_ribbon(data=data.pred, #predicted data
+                                      aes(x=final_total_min, y=y.pred,ymin=y.lower,
+                                          ymax=y.upper),
+                                      alpha=0.4,
+                                      fill="purple2")+
+                          theme_kate()
+
+                   ggsave(filename="ModH1_Between.png",
+                          width=6, height=4, units='in', dpi=300)
+                   
+#Model H1 (Proportional)
+total_minutes_prop<-round(seq(min(yam_analysis$final_social_prop_cw2,na.rm = TRUE),
+                                    max(yam_analysis$final_social_prop_cw2,na.rm = TRUE),by=.1),2)
+                 data.pred = data.frame(final_social_prop_cw2=total_minutes_prop)
+                 y.pred = predict(mod_h1_prop,
+                     newdata=data.pred,se=T,level = 0)
+                 data.pred = cbind.data.frame(data.pred,
+                                              y.pred)
+                 scale = 1.96
+                 #alternate option
+                 scale = 1.96
+                  designmat<-model.matrix(eval(eval(mod_h1_prop$call$fixed)[-2]),
+                        data.pred[-3]) #make design matrix
+                  SDvalue<-sqrt(diag(designmat %*% mod_h1_prop$varFix %*% t(designmat))) #calculate standard deviation for each point for each model
+                  y.lower<-y.pred-(scale*SDvalue) #calculate confidence intervals - lower
+                  y.upper<-y.pred+(scale*SDvalue) #calculate confidence intervals - upper
+                  data.pred = cbind.data.frame(data.pred,
+                             y.lower,
+                             y.upper)
+                data.pred$ypred<-data.pred$y.pred
+                 #end alternate option
+                        ggplot(data=NULL
+                        )+
+                          ylab("Predicted Anxiety")+
+                          xlab("Social Use Proportion")+
+                          ggtitle("Model H1 (Prop)")+
+                          geom_point(data=yam_analysis,
+                                     aes(x=final_social_prop_cw2, y=yam_total_cw2,group=record_id,colour=wave),
+                                     size=1.5,
+                                     alpha=0.5) +
+                          geom_line(data=data.pred, #predicted data
+                                    aes(x=final_social_prop_cw2, y=y.pred), #y.pred as x?
+                                    size=1,
+                                    colour="purple2")+
+                          geom_ribbon(data=data.pred, #predicted data
+                                      aes(x=final_social_prop_cw2, y=y.pred,ymin=y.lower,
+                                          ymax=y.upper),
+                                      alpha=0.4,
+                                      fill="purple2")+
+                          theme_kate()
+
+                   ggsave(filename="ModH1_Prop.png",
+                          width=6, height=4, units='in', dpi=300)
+                   
+                   
+                   
+                   
+                   
+#Model H2
+ total_minutes_h2<-round(seq(min(mspss_analysis$final_total_min_cw2,na.rm = TRUE),
+                                    max(mspss_analysis$final_total_min_cw2,na.rm = TRUE),by=400),2)
+                 data.pred = data.frame(final_total_min_cw2=total_minutes_h2)
+                 y.pred = predict(mod_h2,
+                     newdata=data.pred,se=T,level = 0)
+                 data.pred = cbind.data.frame(data.pred,
+                                              y.pred)
                  #alternate option
                  scale = 1.96
                   designmat<-model.matrix(eval(eval(mod_h2$call$fixed)[-2]),
@@ -1219,33 +1362,18 @@ total_minutes<-round(seq(min(yam_analysis$final_total_min_cw2,na.rm = TRUE),
                              y.upper)
                 data.pred$ypred<-data.pred$y.pred
                  #end alternate option
-                 y.upper = y.pred$fit + (scale*y.pred$se.fit)
-                 y.lower = y.pred$fit - (scale*y.pred$se.fit)
-                 change<-data.pred$fit
-                 assign(paste0("pred_",meas),cbind.data.frame(data.pred, #remove assign/paste0
-                                              y.lower,
-                                              y.upper,
-                                              change))
-                 rm(avgage,data.pred,y.pred,y.upper,y.lower)
-                 #assign(paste0("abslinedplot_",meas),
-                        ggplot(data=NULL#,
-                               #aes(x=final_total_min_cw2,
-                                  # y=yam_total_cw2)
+                
+                        ggplot(data=NULL
                         )+
                           ylab("Predicted Social Support")+
                           xlab("Total Screen Use")+
-                          ggtitle("Model H2")+
-                          #geom_line(data=yam_analysis, #raw data
-                             #       aes(x=final_total_min_cw2, y=yam_total_cw2,group=record_id,
-                               #         colour=record_id),
-                                #    alpha=0.4,
-                                #    size=.6) +
+                          ggtitle("Model H2 (Within)")+
                           geom_point(data=mspss_analysis,
-                                     aes(x=final_total_min_cw2, y=mspsss_total_cw2,group=record_id,colour=wave),
+                                     aes(x=final_total_min_cw2, y=mspss_total_cw2,group=record_id,colour=wave),
                                      size=1.5,
                                      alpha=0.5) +
                           geom_line(data=data.pred, #predicted data
-                                    aes(x=final_total_min_cw2, y=y.pred), #y.pred as x?
+                                    aes(x=final_total_min_cw2, y=y.pred), 
                                     size=1,
                                     colour="purple2")+
                           geom_ribbon(data=data.pred, #predicted data
@@ -1255,14 +1383,55 @@ total_minutes<-round(seq(min(yam_analysis$final_total_min_cw2,na.rm = TRUE),
                                       fill="purple2")+
                           theme_kate()
 
-                   ggsave(filename="ModH2.png",
-                          width=6, height=4, units='in', dpi=300)
+                   ggsave(filename="ModH2_Within.png",
+                          width=6, height=4, units='in', dpi=300)  
                    
                    
-                   
+#Model H2 (Between)
+total_minutes_h2_between<-round(seq(min(mspss_analysis$final_total_min,na.rm = TRUE),
+                                    max(mspss_analysis$final_total_min,na.rm = TRUE),by=500),2)
+                 data.pred = data.frame(final_total_min=total_minutes_h2_between)
+                 y.pred = predict(mod_h2_between,
+                     newdata=data.pred,se=T,level = 0)
+                 data.pred = cbind.data.frame(data.pred,
+                                              y.pred)
+                 #alternate option
+                 scale = 1.96
+                  designmat<-model.matrix(eval(eval(mod_h2_between$call$fixed)[-2]),
+                        data.pred[-3]) #make design matrix
+                  SDvalue<-sqrt(diag(designmat %*% mod_h2_between$varFix %*% t(designmat))) #calculate standard deviation for each point for each model
+                  y.lower<-y.pred-(scale*SDvalue) #calculate confidence intervals - lower
+                  y.upper<-y.pred+(scale*SDvalue) #calculate confidence intervals - upper
+                  data.pred = cbind.data.frame(data.pred,
+                             y.lower,
+                             y.upper)
+                data.pred$ypred<-data.pred$y.pred
+                 #end alternate option
+                
+                        ggplot(data=NULL
+                        )+
+                          ylab("Predicted Social Support")+
+                          xlab("Total Screen Use")+
+                          ggtitle("Model H2 (Within)")+
+                          geom_point(data=mspss_analysis,
+                                     aes(x=final_total_min, y=mspss_total,group=record_id,colour=wave),
+                                     size=1.5,
+                                     alpha=0.5) +
+                          geom_line(data=data.pred, #predicted data
+                                    aes(x=final_total_min, y=y.pred), 
+                                    size=1,
+                                    colour="purple2")+
+                          geom_ribbon(data=data.pred, #predicted data
+                                      aes(x=final_total_min, y=y.pred,ymin=y.lower,
+                                          ymax=y.upper),
+                                      alpha=0.4,
+                                      fill="purple2")+
+                          theme_kate()
 
+                   ggsave(filename="ModH2_Between.png",
+                          width=6, height=4, units='in', dpi=300)  
                    
-                   
+   
 ```
 
 
