@@ -49,10 +49,10 @@ Import data files
 Don't run! You don't need to.
 ```{r eval=FALSE, include=FALSE}
 #read in Qualtrics data
-qualtrics_k <- list.files(path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/Qualtrics", full.names = TRUE) %>% #strings as characters = false
+qualtrics <- list.files(path="/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/Qualtrics", full.names = TRUE) %>% #strings as characters = false
   lapply(read_excel) %>% #change to read csv, parse by/str split, take first character, keep full date in case we need it later
   bind_rows %>%
-  select(1:2,7,9,27:96, 137, 142, 143)
+  select(1:2,7,9,27:96, 137, 142, 143) 
 
 #Convert start dates & end dates to proper format
 qualtrics$StartDate <- as.Date(as.numeric(qualtrics$StartDate), origin="1899-12-30")
@@ -106,6 +106,8 @@ load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/processed_data.Rda")
 
 #' *Run to load data for pre-reg analysis*
 load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/analysis_data.Rda")
+load("/Volumes/devbrainlab/Covid19SocialScreens/CSS_Data/Standardized_Analysis_Data.Rda")
+
 ```
 
 Calculate Summary Stats
@@ -186,6 +188,8 @@ data_copy <- data_copy %>% mutate(mspss_friends = rowSums(.[c("mspss_6", "mspss_
 # Calculate how many MSPSS items were finished, exclude if <80%
 data_copy <- data_copy %>% mutate(mspss_na = rowSums(is.na(.[grep("mspss", names(.))]), na.rm = T))
 #If >= 3 items left blank, exclude
+
+
 
 ```
 
@@ -553,9 +557,16 @@ Make Data Frame for Analysis
 
 analysis_data <- processed_data %>%
   #select(1:7, 99:100, 192:202, 216:222) #202, drop 210, 99:100
-  select(1:9, 194:206, 221:227)
+  select(1:13, 194:206, 221:228)
 save(analysis_data, file="analysis_data.Rda")
 
+
+#Subjective Screen Time
+processed_data$tech_use_1 <- as.numeric(processed_data$tech_use_1)
+processed_data$tech_use_2 <- as.numeric(processed_data$tech_use_2)
+processed_data$tech_use_3 <- as.numeric(processed_data$tech_use_3)
+processed_data$tech_use_4 <- as.numeric(processed_data$tech_use_4)
+processed_data <- processed_data %>% mutate(subj_screen_total = rowSums(.[c("tech_use_1", "tech_use_2", "tech_use_3", "tech_use_4")], na.rm = T))
 
 #average stability over waves
 avg_friend_stability <- analysis_data %>%
@@ -970,6 +981,42 @@ mod_h1_soc <- lme(yam_total_cw2 ~ final_total_min_cw2 + final_social_min_cw2,
 
 anova(mod_h1,mod_h1_soc)
 
+mod_h1_soc_month <- lme(yam_total_cw2 ~ final_total_min_cw2 + final_social_min_cw2 + StartMonth,
+                  random = ~1|record_id,
+                  data=(yam_analysis %>% filter(!is.na(final_social_min_cw2))),
+                  method="ML",
+                  na.action=na.omit)
+anova(mod_h1_soc, mod_h1_soc_month)
+
+mod_h1_between_soc <- lme(yam_total ~ final_total_min + final_social_min,
+              random = ~1|record_id,
+              data=(yam_analysis %>% filter(!is.na(final_social_min))),
+              method="ML",
+              na.action=na.omit)
+anova(mod_h1_between,mod_h1_between_soc)
+
+#Add month to the model
+mod_h1_month <- lme(yam_total_cw2 ~ final_total_min_cw2 + StartMonth,
+                    random = ~1|record_id,
+                    data=(yam_analysis %>% filter(!is.na(final_social_min_cw2))),
+                  method="ML",
+                  na.action=na.omit)
+anova(mod_h1, mod_h1_month)
+
+mod_h1_month_only <- lme(yam_total_cw2 ~ StartMonth,
+                    random = ~1|record_id,
+                    data=(yam_analysis %>% filter(!is.na(final_social_min_cw2)&!is.na(final_total_min_cw2))),
+                  method="ML",
+                  na.action=na.omit)
+anova(mod_h1_month, mod_h1_month_only)
+
+mod_h1_between_month <- lme(yam_total ~ final_total_min + StartMonth,
+              random = ~1|record_id,
+              data=(yam_analysis %>% filter(!is.na(final_social_min))),
+              method="ML",
+              na.action=na.omit)
+anova(mod_h1_between,mod_h1_between_month)
+
 # now look at the proportional method, prob gonna see the same thing
 mod_h1_prop <- lme(yam_total_cw2 ~ final_social_prop_cw2,
               random = ~1|record_id,
@@ -977,6 +1024,12 @@ mod_h1_prop <- lme(yam_total_cw2 ~ final_social_prop_cw2,
               method="ML",
               na.action=na.omit)
 
+mod_h1_prop_month <- lme(yam_total_cw2 ~ final_social_prop_cw2 + StartMonth,
+              random = ~1|record_id,
+              data=yam_analysis,
+              method="ML",
+              na.action=na.omit)
+anova(mod_h1_prop,mod_h1_prop_month)
 
 # Now let's try the VAR approach for lagged relationships
 var_h1 <- mlVAR(analysis_data,
@@ -1028,12 +1081,28 @@ mod_h2_soc <- lme(mspss_total_cw2 ~ final_total_min_cw2 + final_social_min_cw2,
 
 anova(mod_h2,mod_h2_soc)
 
+#Add month
+mod_h2_month <- lme(mspss_total_cw2 ~ final_total_min_cw2 + StartMonth,
+              random = ~1|record_id,
+              data=(mspss_analysis %>% filter(!is.na(final_social_min_cw2))),
+              method="ML",
+              na.action=na.omit)
+anova(mod_h2, mod_h2_month)
+
+
 #proportional method
 mod_h2_prop <- lme(mspss_total_cw2 ~ final_social_prop_cw2,
               random = ~1|record_id,
               data=mspss_analysis,
               method="ML",
               na.action=na.omit)
+
+mod_h2_prop_month <- lme(mspss_total_cw2 ~ final_social_prop_cw2 + StartMonth,
+              random = ~1|record_id,
+              data=mspss_analysis,
+              method="ML",
+              na.action=na.omit)
+anova(mod_h2_prop,mod_h2_prop_month)
 
 #lagged relationships
 var_h2 <- mlVAR(analysis_data,
@@ -1087,12 +1156,36 @@ mod_h3_both <- lme(final_social_min_cw2 ~ final_total_min_cw2 + prop_friend_stab
               na.action=na.omit)
 anova(mod_h3_tot,mod_h3_both)
 
+mod_h3_both_month <- lme(final_social_min_cw2 ~ final_total_min_cw2 + prop_friend_stability_cw2 + StartMonth,
+              random = ~1|record_id,
+              data=standardized_analysis_data,
+              method="ML",
+              na.action=na.omit)
+anova(mod_h3_both,mod_h3_both_month)
 
 mod_h3_prop <- lme(final_social_prop_cw2 ~ prop_friend_stability_cw2,
               random = ~1|record_id,
               data=standardized_analysis_data,
               method="ML",
               na.action=na.omit)
+
+mod_h3_prop_month <- lme(final_social_prop_cw2 ~ prop_friend_stability_cw2 + StartMonth,
+              random = ~1|record_id,
+              data=standardized_analysis_data,
+              method="ML",
+              na.action=na.omit)
+anova(mod_h3_prop,mod_h3_prop_month)
+
+#Add month
+mod_h3_tot_month <-  lme(final_social_min_cw2 ~ final_total_min_cw2 +StartMonth,
+              random = ~1|record_id,
+              data=filter(standardized_analysis_data, !is.na(prop_friend_stability_cw2)),
+              method="ML",
+              na.action=na.omit)
+anova(mod_h3_tot,mod_h3_tot_month)
+
+
+
 
 #Between Subjects
 
@@ -1169,6 +1262,47 @@ plot(var_h4, "contemporaneous", title = "Estimated contemporaneous relationships
     layout = "circle")
 
 
+```
+
+Models w/ Subjective Screen Use
+```{r}
+#Between Participants
+mod_subjective_objective <- lme(final_total_min ~ subj_screen_total,
+              random = ~1|record_id,
+              data=(analysis_data %>% filter(!is.na(final_total_min))),
+              method="ML",
+              na.action=na.omit)
+ggplot(analysis_data, aes(x=final_total_min, y=subj_screen_total)) + geom_point()
+ggplot(analysis_data, aes(x=final_social_min, y=tech_use_3)) + geom_point()
+
+
+mod_h1_subjective_total <- lme(yam_total ~ subj_screen_total,
+              random = ~1|record_id,
+              data=(yam_analysis %>% filter(!is.na(subj_screen_total)& !is.na(tech_use_3))),
+              method="ML",
+              na.action=na.omit)
+
+mod_h1_subjective_social <- lme(yam_total ~ subj_screen_total + tech_use_3,
+              random = ~1|record_id,
+              data=(yam_analysis %>% filter(!is.na(subj_screen_total))),
+              method="ML",
+              na.action=na.omit)
+anova(mod_h1_subjective_total,mod_h1_subjective_social)
+
+
+#Within Participants
+mod_h1_subjective_within_total <- lme(yam_total_cw2 ~ subj_screen_total_cw2,
+              random = ~1|record_id,
+              data=(yam_analysis %>% filter(!is.na(subj_screen_total_cw2)& !is.na(tech_use_3_cw2))),
+              method="ML",
+              na.action=na.omit)
+
+mod_h1_subjective_within_social <- lme(yam_total_cw2 ~ subj_screen_total_cw2 + tech_use_3_cw2,
+              random = ~1|record_id,
+              data=(yam_analysis %>% filter(!is.na(subj_screen_total_cw2))),
+              method="ML",
+              na.action=na.omit)
+anova(mod_h1_subjective_total,mod_h1_subjective_social)
 ```
 Model Visualization
 ```{r}
@@ -1449,7 +1583,9 @@ standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id)
     final_social_prop_mean2 = mean(final_social_prop, na.rm = T),
     final_total_min_mean2 = mean(final_total_min, na.rm = T),
     final_social_min_mean2 = mean(final_social_min, na.rm = T),
-    prop_friend_stability_mean2 = mean(final_social_min, na.rm = T)
+    prop_friend_stability_mean2 = mean(final_social_min, na.rm = T),
+    subj_screen_total_mean2 = mean(subj_screen_total, na.rm = T),
+    tech_use_3_mean2 = mean(tech_use_3, na.rm = T)
 
   ) %>% ungroup() %>% 
   mutate(
@@ -1459,7 +1595,8 @@ standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id)
     final_total_min_c2 = scale(final_total_min, center = T, scale = F),
     final_social_min_c2 = scale(final_social_min, center = T, scale = F),
     prop_friend_stability_c2 = scale(prop_friend_stability, center = T, scale = F),
-    
+    subj_screen_total_c2 = scale(subj_screen_total, center = T, scale = F),
+    tech_use_3_c2 = scale(tech_use_3, center = T, scale = F),
     
     yam_total_cw2 = yam_total - yam_total_mean2,
     mspss_total_cw2 = mspss_total - mspss_total_mean2,
@@ -1467,14 +1604,19 @@ standardized_analysis_data <- standardized_analysis_data %>% group_by(record_id)
     final_total_min_cw2 = final_total_min - final_total_min_mean2,
     final_social_min_cw2 = final_social_min - final_social_min_mean2,
     prop_friend_stability_cw2 = prop_friend_stability - prop_friend_stability_mean2,
+    subj_screen_total_cw2 = subj_screen_total - subj_screen_total_mean2,
+    tech_use_3_cw2 = tech_use_3 - tech_use_3_mean2,
 
     yam_total_cb2 = yam_total_c2 - yam_total_cw2,
     mspss_total_cb2 = mspss_total_c2 - mspss_total_cw2,
     final_social_prop_cb2 = final_social_prop_c2 - final_social_prop_cw2,
     final_total_min_cb2 = final_total_min_c2 - final_total_min_cw2,
     final_social_min_cb2 = final_social_min_c2 - final_social_min_cw2,
-    prop_friend_stability_cb2 = prop_friend_stability_c2 - prop_friend_stability_cw2
+    prop_friend_stability_cb2 = prop_friend_stability_c2 - prop_friend_stability_cw2,
+    tech_use_3_cb2 = tech_use_3_c2 - tech_use_3_cw2
   )
+
+save(standardized_analysis_data, file="Standardized_Analysis_Data.Rda")
 ```
 
 Subset Data for analyses 
@@ -1591,8 +1733,4 @@ summary(scale_model_test_precentered)
 ```
 
 
-Models
-```{r}
 
-
-```
