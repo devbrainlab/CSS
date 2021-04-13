@@ -1076,11 +1076,11 @@ plot(var_h2_social, "contemporaneous", title = "Estimated contemporaneous relati
 #H3: final_social_prop ~ prop_friend_stability
 mod_h3_tot <- lme(final_social_min_cw2 ~ final_total_min_cw2,
               random = ~1|record_id,
-              data=filter(standardized_analysis_data, !is.na(prop_friend_stability_cw2)),
+              data=filter(standardized_analysis_data, !is.na(prop_friend_stability)),
               method="ML",
               na.action=na.omit)
 
-mod_h3_both <- lme(final_social_min_cw2 ~ final_total_min_cw2 + prop_friend_stability_cw2,
+mod_h3_both <- lme(final_social_min_cw2 ~ final_total_min_cw2 + prop_friend_stability,
               random = ~1|record_id,
               data=standardized_analysis_data,
               method="ML",
@@ -1590,6 +1590,20 @@ summary(scale_model_test_precentered)
 
 ```
 
+Other Data Vix
+```{r}
+#Plot: x = wave, y = participant id, plot wave
+#line plot to connect participant ids
+#, colour = factor(record_id)
+
+qplot(x=wave, y=record_id, colour = factor(record_id),
+data = analysis_data, geom = "line", main= "Participants by Wave",xlab="Wave", ylab="Participant")  + theme(legend.position="none")
+ggsave("ParticipantWave.png")
+
+qplot(x=StartDate, y=record_id, colour = factor(record_id),
+data = analysis_data, geom = "line", main= "Participants by Wave",xlab="Date", ylab="Participant")  + theme(legend.position="none")
+ggsave("ParticipantDate.png")
+```
 
 Models
 ```{r}
