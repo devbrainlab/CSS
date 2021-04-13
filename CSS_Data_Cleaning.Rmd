@@ -1732,7 +1732,7 @@ summary(scale_model_test_precentered)
 
 ```
 
-Other Data Vix
+Other Data Viz
 ```{r}
 #Plot: x = wave, y = participant id, plot wave
 #line plot to connect participant ids
