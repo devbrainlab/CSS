@@ -1743,8 +1743,50 @@ data = analysis_data, geom = "line", main= "Participants by Wave",xlab="Wave", y
 ggsave("ParticipantWave.png")
 
 qplot(x=StartDate, y=record_id, colour = factor(record_id),
-data = analysis_data, geom = "line", main= "Participants by Wave",xlab="Date", ylab="Participant")  + theme(legend.position="none")
+data = analysis_data, geom = "line", main= "Participants by Date",xlab="Date", ylab="Participant")  + theme(legend.position="none")
 ggsave("ParticipantDate.png")
+
+
+#Kate's version
+
+#Subset to usable data
+forty_subjects <-  analysis_data %>% group_by(record_id) %>% filter(n()>1) #
+forty_subjects
+
+
+#Plot for participants by date
+study_design_plot<- ggplot(forty_subjects,
+                           aes(x=StartDate,
+                               y=factor(record_id),
+                                color=factor(record_id))) + 
+  geom_point(alpha=1) + 
+  geom_line(alpha=.4) +
+  theme(axis.text.y = element_blank()) +
+  ylab("Participant") +
+  xlab("Date")+
+  scale_y_discrete(breaks=NULL) +
+  theme(legend.position = "none")
+
+print(study_design_plot)
+ggsave(filename="ParticipantDates.png",
+       plot=study_design_plot, width=6, height=5, units='in', dpi=300)
+
+#Plot for participants by waves
+study_design_plot_waves<- ggplot(forty_subjects,
+                           aes(x=wave,
+                               y=factor(record_id),
+                                color=factor(record_id))) + 
+  geom_point(alpha=1) + 
+  geom_line(alpha=.4) +
+  theme(axis.text.y = element_blank()) +
+  ylab("Participant") +
+  xlab("Wave")+
+  scale_y_discrete(breaks=NULL) +
+  theme(legend.position = "none")
+
+print(study_design_plot_waves)
+ggsave(filename="ParticipantWaves.png",
+       plot=study_design_plot, width=6, height=5, units='in', dpi=300)
 ```
 
 
