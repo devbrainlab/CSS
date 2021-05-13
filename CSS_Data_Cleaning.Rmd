@@ -811,29 +811,32 @@ ggplot(filter(analysis_data, wave==10), aes(x = final_social_prop, y = prop_frie
 ggplot(analysis_data, aes(x = wave, y = yam_total)) +  #questionable
   geom_line(aes(color = record_id)) 
 
+
+
 #SPAGHETTI PLOTS
+
 qplot(x=wave, y=yam_total, colour = factor(record_id),
-data = analysis_data, geom = "line", main= "Anxiety Across Waves (per articipant)",xlab="Wave", ylab="YAM Score")  + theme(legend.position="none")
+data = analysis_data, geom = "line", main= "Anxiety Across Waves (per participant)",xlab="Wave", ylab="YAM Score") + theme_classic() + theme(legend.position="none")
 ggsave("AnxietyParticipants.png")
 
 qplot(x=wave, y=mspss_total, colour = factor(record_id),
-data = analysis_data, geom = "line", main="Social Support Across Waves (per participant)", xlab="wave", ylab="Social Support") + theme(legend.position="none")
+data = analysis_data, geom = "line", main="Social Support Across Waves (per participant)", xlab="wave", ylab="Social Support") + theme_classic() + theme(legend.position="none")
 ggsave("SocialSupportParticipants.png")
 
 qplot(x=wave, y=prop_friend_stability, colour = factor(record_id),
-data = subset(analysis_data, wave!=1), geom = "line", main="Friend Stability Across Waves (per participant)", xlab="Wave", ylab="Friend Stability") + theme(legend.position="none")
+data = subset(analysis_data, wave!=1), geom = "line", main="Friend Stability Across Waves (per participant)", xlab="Wave", ylab="Friend Stability") + theme_classic() + theme(legend.position="none")
 ggsave("FriendStabilityParticipants_Subset.png")
 
 qplot(x=wave, y=final_social_min, colour = factor(record_id),
-data = analysis_data, geom = "line", main="Social Screen Minutes Across Waves (per participant)", xlab="Wave", ylab="Social Screen Minutes") + theme(legend.position="none")
+data = analysis_data, geom = "line", main="Social Screen Minutes Across Waves (per participant)", xlab="Wave", ylab="Social Screen Minutes") + theme_classic() + theme(legend.position="none")
 ggsave("SocialMinutesParticipants.png")
 
 qplot(x=wave, y=final_total_min, colour = factor(record_id),
-data = analysis_data, geom = "line", main="Total Screen Minutes Across Waves (per participant)", xlab="Wave", ylab="Total Screen Minutes") + theme(legend.position="none")
+data = analysis_data, geom = "line", main="Total Screen Minutes Across Waves (per participant)", xlab="Wave", ylab="Total Screen Minutes") + theme_classic() + theme(legend.position="none")
 ggsave("TotalMinutesParticipants.png")
 
 qplot(x=wave, y=final_social_prop, colour = factor(record_id),
-data = analysis_data, geom = "line", main="Social Screen Use Proportion Across Waves (per participant)", xlab="Wave", ylab="Social Screen Use Proportion") + theme(legend.position="none")
+data = analysis_data, geom = "line", main="Social Screen Use Proportion Across Waves (per participant)", xlab="Wave", ylab="Social Screen Use Proportion") + theme_classic() + theme(legend.position="none")
 ggsave("SocialProportionsParticipants.png")
 
 #GROUP AVERAGES OVER WAVES (PER AGE YEAR)
@@ -1645,33 +1648,33 @@ Data Viz for within-person centered data
 ```{r}
 #Centered anxiety across waves (by participant)
 qplot(x=wave, y=yam_total_cw2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Anxiety (Within-Participants)",xlab="Wave", ylab="Centered YAM Score")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Anxiety (Within Participants)",xlab="Wave", ylab="Centered YAM Score") + theme_classic() + theme(legend.position="none")
 ggsave("CenteredAnxietyParticipants.png")
 
 #Centered social support across waves (by participant)
 qplot(x=wave, y=mspss_total_cw2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Social Support (Within-Participants)",xlab="Wave", ylab="Centered MSPSS Score")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Social Support (Within Participants)",xlab="Wave", ylab="Centered MSPSS Score") + theme_classic() + theme(legend.position="none")
 ggsave("CenteredSocialSupportParticipants.png")
 
 #Centered social use proportion
 qplot(x=wave, y=final_social_prop_cw2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Social Proportion (Within-Participants)",xlab="Wave", ylab="Centered Social Proportion")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Social Proportion (Within Participants)",xlab="Wave", ylab="Centered Social Proportion") + theme_classic() + theme(legend.position="none")
 ggsave("CenteredSocialProportionParticipants.png")
 
 #Centered total min 
 qplot(x=wave, y=final_total_min_cw2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Total Use (Within-Participants)",xlab="Wave", ylab="Centered Total Use")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Total Use (Within Participants)",xlab="Wave", ylab="Centered Total Use") + theme_classic() + theme(legend.position="none")
 ggsave("CenteredTotalMinParticipants.png")
 
 #Centered social min 
 qplot(x=wave, y=final_social_min_cw2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Social Use Min (Within-Participants)",xlab="Wave", ylab="Centered Social Use")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Social Use Min (Within Participants)",xlab="Wave", ylab="Centered Social Use") + theme_classic() + theme(legend.position="none")
 ggsave("CenteredSocialMinParticipants.png")
 
 #Centered friend stability
 #ending up as straight lines, values don't make sense
 qplot(x=wave, y=prop_friend_stability_cw2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Friend Stability (Within-Participants)",xlab="Wave", ylab="Centered Friend Stability")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Friend Stability (Within Participants)",xlab="Wave", ylab="Centered Friend Stability") + theme_classic() + theme(legend.position="none")
 ggsave("CenteredFriendStabilityParticipants.png")
 
 ```
@@ -1680,33 +1683,33 @@ Data viz for between-person centered data
 ```{r}
 #Centered anxiety across waves (by participant)
 qplot(x=wave, y=yam_total_cb2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Anxiety (Between-Participants)",xlab="Wave", ylab="Centered YAM Score")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Anxiety (Between Participants)",xlab="Wave", ylab="Centered YAM Score")  + theme_classic()+ theme(legend.position="none")
 #ggsave("CenteredAnxietyParticipants.png")
 
 #Centered social support across waves (by participant)
 qplot(x=wave, y=mspss_total_cb2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Social Support (Between-Participants)",xlab="Wave", ylab="Centered MSPSS Score")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Social Support (Between Participants)",xlab="Wave", ylab="Centered MSPSS Score") + theme_classic() + theme(legend.position="none")
 #ggsave("CenteredSocialSupportParticipants.png")
 
 #Centered social use proportion
 qplot(x=wave, y=final_social_prop_cb2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Social Proportion (Between-Participants)",xlab="Wave", ylab="Centered Social Proportion")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Social Proportion (Between Participants)",xlab="Wave", ylab="Centered Social Proportion") + theme_classic() + theme(legend.position="none")
 #ggsave("CenteredSocialProportionParticipants.png")
 
 #Centered total min 
 qplot(x=wave, y=final_total_min_cb2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Total Use (Between-Participants)",xlab="Wave", ylab="Centered Total Use")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Total Use (Between Participants)",xlab="Wave", ylab="Centered Total Use") + theme_classic() + theme(legend.position="none")
 #ggsave("CenteredTotalMinParticipants.png")
 
 #Centered social min 
 qplot(x=wave, y=final_social_min_cb2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Social Use Min (Between-Participants)",xlab="Wave", ylab="Centered Social Use")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Social Use Min (Between Participants)",xlab="Wave", ylab="Centered Social Use") + theme_classic() + theme(legend.position="none")
 #ggsave("CenteredSocialMinParticipants.png")
 
 #Centered friend stability
 #ending up as straight lines, values don't make sense
 qplot(x=wave, y=prop_friend_stability_cb2, colour = factor(record_id),
-data = standardized_analysis_data, geom = "line", main= "Friend Stability (Between-Participants)",xlab="Wave", ylab="Centered Friend Stability")  + theme(legend.position="none")
+data = standardized_analysis_data, geom = "line", main= "Friend Stability (Between Participants)",xlab="Wave", ylab="Centered Friend Stability") + theme_classic() + theme(legend.position="none")
 #ggsave("CenteredFriendStabilityParticipants.png")
 
 
@@ -1739,11 +1742,11 @@ Other Data Viz
 #, colour = factor(record_id)
 
 qplot(x=wave, y=record_id, colour = factor(record_id),
-data = analysis_data, geom = "line", main= "Participants by Wave",xlab="Wave", ylab="Participant")  + theme(legend.position="none")
+data = analysis_data, geom = "line", main= "Participants by Wave",xlab="Wave", ylab="Participant") + theme_classic() + theme(legend.position="none")
 ggsave("ParticipantWave.png")
 
 qplot(x=StartDate, y=record_id, colour = factor(record_id),
-data = analysis_data, geom = "line", main= "Participants by Date",xlab="Date", ylab="Participant")  + theme(legend.position="none")
+data = analysis_data, geom = "line", main= "Participants by Date",xlab="Date", ylab="Participant") + theme_classic() + theme(legend.position="none")
 ggsave("ParticipantDate.png")
 
 
@@ -1765,6 +1768,7 @@ study_design_plot<- ggplot(forty_subjects,
   ylab("Participant") +
   xlab("Date")+
   scale_y_discrete(breaks=NULL) +
+  theme_classic()+
   theme(legend.position = "none")
 
 print(study_design_plot)
@@ -1782,6 +1786,7 @@ study_design_plot_waves<- ggplot(forty_subjects,
   ylab("Participant") +
   xlab("Wave")+
   scale_y_discrete(breaks=NULL) +
+  theme_classic() +
   theme(legend.position = "none")
 
 print(study_design_plot_waves)
@@ -1789,4 +1794,59 @@ ggsave(filename="ParticipantWaves.png",
        plot=study_design_plot, width=6, height=5, units='in', dpi=300)
 ```
 
+
+APS Figures
+```{r}
+#GENERATE COLORS
+pal <- wes_palette("Darjeeling1", 37, type = "continuous")
+
+#SPAGHETTI PLOTS
+anxiety_p <- ggplot(data = forty_subjects, aes(x = wave, y = yam_total, group = record_id))
+anxiety_p+geom_line(aes(color=as.factor(record_id)))+scale_color_manual(values=pal) + theme_classic() + theme(legend.position="none") + xlab("Wave") + ylab("Anxiety")
+ggsave("APS_Anxiety.png")
+
+support_p <- ggplot(data = forty_subjects, aes(x = wave, y = mspss_total, group = record_id))
+support_p+geom_line(aes(color=as.factor(record_id)))+scale_color_manual(values=pal) + theme_classic() + theme(legend.position="none") + xlab("Wave") + ylab("Social Support")
+ggsave("APS_Support.png")
+
+socialmin_p <- ggplot(data = forty_subjects, aes(x = wave, y = final_social_min, group = record_id))
+socialmin_p+geom_line(aes(color=as.factor(record_id)))+scale_color_manual(values=pal) + theme_classic() + theme(legend.position="none") + xlab("Wave") + ylab("Social Screen Use")
+ggsave("APS_SocialUse.png")
+
+totalmin_p <- ggplot(data = forty_subjects, aes(x = wave, y = final_total_min, group = record_id))
+totalmin_p+geom_line(aes(color=as.factor(record_id)))+scale_color_manual(values=pal) + theme_classic() + theme(legend.position="none") + xlab("Wave") + ylab("Total Screen Use")
+ggsave("APS_TotalUse.png")
+
+#Remove last data point per participant for friend stability:
+forty_subjects_last_dropped <- forty_subjects %>% 
+   select(record_id, wave, prop_friend_stability)  %>%
+   group_by(record_id) %>% 
+   filter(row_number() <= (n() - 1))
+
+stability_p <- ggplot(data = subset(forty_subjects_last_dropped,wave!=1), aes(x = wave, y = prop_friend_stability, group = record_id))
+stability_p+geom_line(aes(color=as.factor(record_id)))+scale_color_manual(values=pal) + theme_classic() + theme(legend.position="none") + xlab("Wave") + ylab("Social Connection Stability")
+ggsave("APS_Stability.png")
+
+
+
+#Study Design
+study_design_plot<- ggplot(forty_subjects,
+                           aes(x=StartDate,
+                               y=factor(record_id),
+                                color=factor(record_id))) + 
+  geom_point(alpha=1) + 
+  geom_line(alpha=.4) +
+  theme(axis.text.y = element_blank()) +
+  ylab("Participant") +
+  xlab("Date")+
+  scale_y_discrete(breaks=NULL) +
+  scale_color_manual(values=pal)+
+  theme_classic()+
+  theme(legend.position = "none")
+
+print(study_design_plot)
+ggsave(filename="APS_Design.png",
+       plot=study_design_plot, width=6, height=5, units='in', dpi=300)
+
+```
 
